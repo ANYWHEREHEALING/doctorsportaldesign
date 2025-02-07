@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Button, Input, Label, Checkbox, Switch } from "@/app/components/ui"
-import {  Moon, Sun } from "lucide-react"
+import { Button, Input , Switch } from "@/app/components/ui"
+import { Moon, Sun } from "lucide-react"
 
-export default function LoginPage() {
+
+export default function ForgetPassword() {
   const [darkMode, setDarkMode] = useState(false)
 
   useEffect(() => {
@@ -46,9 +47,9 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Login Form */}
+          {/* Forget Password Form */}
           <div className="space-y-6">
-            <h1 className="text-2xl font-medium text-center mb-8 dark:text-white">Login</h1>
+            <h1 className="text-2xl font-medium text-center mb-8 dark:text-white">Forget Password</h1>
 
             <div className="space-y-4">
               <Input
@@ -56,26 +57,13 @@ export default function LoginPage() {
                 placeholder="Enter your email..."
                 className="bg-gray-100 dark:bg-gray-700 border-0 h-12 rounded-lg dark:text-white dark:placeholder-gray-400"
               />
-
-              <Input
-                type="password"
-                placeholder="Enter your password..."
-                className="bg-gray-100 dark:bg-gray-700 border-0 h-12 rounded-lg dark:text-white dark:placeholder-gray-400"
-              />
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox id="privacy" className="border-gray-400 dark:border-gray-600" />
-              <Label htmlFor="privacy" className="text-sm text-gray-600 dark:text-gray-300">
-                By Login in Anywhere Healing, I agree the privacy policy.
-              </Label>
-            </div>
-
-            <Button className="w-full h-12 bg-[#8BA872] hover:bg-[#7A946A] text-white rounded-lg">continue</Button>
+            <Button className="w-full h-12 bg-[#8BA872] hover:bg-[#7A946A] text-white rounded-lg">Send Code</Button>
 
             <div className="text-center">
-              <Link href="/forget-page" className="text-sm text-gray-600 dark:text-gray-300 hover:underline">
-                Forget Password?
+              <Link href="/login" className="text-sm text-gray-600 dark:text-gray-300 hover:underline">
+                Login
               </Link>
             </div>
           </div>

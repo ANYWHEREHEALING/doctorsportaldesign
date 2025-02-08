@@ -29,10 +29,7 @@ const patients = [
   // Add more mock patients here...
 ] as const
 
-const DOCTOR = {
-  name: "Dr. Arma",
-  avatar: "/avatars/doctor.png",
-}
+
 
 
 

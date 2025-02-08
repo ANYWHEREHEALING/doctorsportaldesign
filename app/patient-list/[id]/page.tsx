@@ -29,27 +29,7 @@ const BODY_POINTS = [
   { x: 200, y: 450 }, // Knee
 ]
 
-const patients = [
-  {
-    id: "1",
-    name: "Kristin Watson",
-    avatar: "/avatars/01.png",
-    condition: "Infectious disease",
-    lastScanDate: "Dec 18, 2024",
-    specialty: "Geriatrician",
-    status: "Confirmed",
-  },
-  {
-    id: "2",
-    name: "Jacob Jones",
-    avatar: "/avatars/02.png",
-    condition: "Infectious disease",
-    lastScanDate: "Dec 18, 2024",
-    specialty: "Internist",
-    status: "Confirmed",
-  },
-  // Add more mock patients here...
-] as const
+
 
 
 export default function PatientDetailsPage() {
@@ -78,16 +58,7 @@ export default function PatientDetailsPage() {
   }
 
    
-  const filteredPatients = patients.filter(patient => {
-    
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      patient.name.toLowerCase().includes(searchLower) ||
-      patient.condition.toLowerCase().includes(searchLower) ||
-      patient.specialty.toLowerCase().includes(searchLower) ||
-      patient.status.toLowerCase().includes(searchLower)
-    )
-  })
+  
 
   
   return (

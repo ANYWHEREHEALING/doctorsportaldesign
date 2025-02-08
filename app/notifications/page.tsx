@@ -1,113 +1,91 @@
-"use client";
-import { useState, useEffect } from 'react';
-import { EnvelopeIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
-import { GlobeIcon, TwitterIcon, InstagramIcon } from 'lucide-react';
+"use client"
 
-export default function ComingSoon() {
-  const [timeLeft, setTimeLeft] = useState({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0
-  });
+import { useState } from "react"
+import { Sidebar } from "../patient-list/components/sidebar"
+import { Header } from "../patient-list/components/header"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui"
+import { Bell, MoreVertical } from "lucide-react"
 
-  const [email, setEmail] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+const notifications = [
+  {
+    id: "1",
+    message: "New scan results available for Kristin Watson",
+    date: "Dec 18, 2024",
+    status: "Unread",
+  },
+  {
+    id: "2",
+    message: "Appointment reminder for Jacob Jones",
+    date: "Dec 17, 2024",
+    status: "Read",
+  },
+  // Add more notifications...
+] as const
 
-  // Countdown timer setup
-  useEffect(() => {
-    const target = new Date('2024-12-31T00:00:00');
-    
-    const timer = setInterval(() => {
-      const now = new Date();
-      const difference = target.getTime() - now.getTime();
-
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-      setTimeLeft({ days, hours, minutes, seconds });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return setError('Please enter your email address');
-    
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIsSubscribed(true);
-      setError('');
-      setEmail('');
-    } catch (err) {
-      setError('Subscription failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+export default function NotificationsPage() {
+  const [darkMode, setDarkMode] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  
+  const filteredNotifications = notifications.filter(notification => {
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      notification.message.toLowerCase().includes(searchLower) ||
+      notification.date.toLowerCase().includes(searchLower) ||
+      notification.status.toLowerCase().includes(searchLower)
+    )
+  })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center p-4">
-      <div className="text-center max-w-2xl w-full">
-        <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 animate-fade-in-up">
-          Something Awesome is Coming
-        </h1>
-        
-        <div className="bg-white/10 backdrop-blur-lg rounded-lg p-8 mb-8 animate-fade-in-up delay-100">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(timeLeft).map(([unit, value]) => (
-              <div key={unit} className="p-4 rounded-lg bg-white/5">
-                <div className="text-4xl font-bold text-white mb-2">{value}</div>
-                <div className="text-sm text-white/80 uppercase tracking-wide">{unit}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-8 animate-fade-in-up delay-200">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <EnvelopeIcon className="w-5 h-5 text-white absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/20 backdrop-blur-sm text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white"
-              />
+    <div className={darkMode ? "dark" : ""}>
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+        <Sidebar darkMode={darkMode} onDarkModeChange={setDarkMode} />
+        <div className="flex-1 ml-64">
+          <Header 
+            doctor={{ name: "Dr. Arma", avatar: "/doctor-avatar.jpg" }} 
+            value={searchTerm}
+            onSearch={setSearchTerm}
+          />
+          <main className="h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900 p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="dark:text-white">Notification</TableHead>
+                    <TableHead className="dark:text-white">Date</TableHead>
+                    <TableHead className="dark:text-white">Status</TableHead>
+                    <TableHead className="text-right dark:text-white">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredNotifications.map((notification) => (
+                    <TableRow key={notification.id}>
+                      <TableCell className="flex items-center gap-3 dark:text-white">
+                        <Bell className="h-5 w-5 text-blue-500" />
+                        {notification.message}
+                      </TableCell>
+                      <TableCell className="dark:text-gray-300">{notification.date}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          notification.status === "Unread" 
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                        }`}>
+                          {notification.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex items-center justify-center px-6 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-opacity-90 transition-all disabled:opacity-50"
-            >
-              {isLoading ? 'Sending...' : 'Notify Me'}
-              <ArrowRightIcon className="w-4 h-4 ml-2" />
-            </button>
-          </div>
-          {error && <p className="text-red-200 text-sm mt-2">{error}</p>}
-          {isSubscribed && <p className="text-green-200 text-sm mt-2">Thank you for subscribing! 🎉</p>}
-        </form>
-
-        <div className="flex justify-center space-x-6 animate-fade-in-up delay-300">
-          <a href="#" className="text-white hover:text-white/80 transition-colors">
-            <GlobeIcon className="w-6 h-6" />
-          </a>
-          <a href="#" className="text-white hover:text-white/80 transition-colors">
-            <TwitterIcon className="w-6 h-6" />
-          </a>
-          <a href="#" className="text-white hover:text-white/80 transition-colors">
-            <InstagramIcon className="w-6 h-6" />
-          </a>
+          </main>
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -2,13 +2,18 @@ import { Home, Bell, LogOut } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button , Switch } from "@/app/components/ui"
+import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
   darkMode: boolean
   onDarkModeChange: (value: boolean) => void
 }
 
+
+// ... existing code ...
+
 export function Sidebar({ darkMode, onDarkModeChange }: SidebarProps) {
+  const pathname = usePathname();
   return (
     <div className="fixed left-0 top-0 h-screen w-64 border-r bg-white dark:bg-gray-900 dark:border-gray-800">
       <div className="flex flex-col h-full">
@@ -30,14 +35,22 @@ export function Sidebar({ darkMode, onDarkModeChange }: SidebarProps) {
         <nav className="flex-1 px-4 space-y-2">
           <Link
             href="/patient-list"
-            className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+            className={`flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg ${
+              pathname === "/patient-list" 
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white" 
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            }`}
           >
             <Home className="h-5 w-5" />
             Patient List
           </Link>
           <Link
             href="/notifications"
-            className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            className={`flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg ${
+              pathname === "/notifications"
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            }`}
           >
             <Bell className="h-5 w-5" />
             Notifications

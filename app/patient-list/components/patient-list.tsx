@@ -9,6 +9,8 @@ interface PatientListProps {
   }
 
 export function PatientList({ patients }: PatientListProps) {
+
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-6">

@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui"
 import { Sidebar } from "@/app/patient-list/components/sidebar"
 import { Header } from "@/app/patient-list/components/header"
 import { PhysicalExamination } from "@/app/patient-list/components/physicalE"
+import { BioScan } from "../components/bio-scan"
 
 const PATIENT_INFO = [
   { label: "Full Name", value: "ARMA YOGA PRASETYA" },
@@ -28,9 +29,36 @@ const BODY_POINTS = [
   { x: 200, y: 450 }, // Knee
 ]
 
+const patients = [
+  {
+    id: "1",
+    name: "Kristin Watson",
+    avatar: "/avatars/01.png",
+    condition: "Infectious disease",
+    lastScanDate: "Dec 18, 2024",
+    specialty: "Geriatrician",
+    status: "Confirmed",
+  },
+  {
+    id: "2",
+    name: "Jacob Jones",
+    avatar: "/avatars/02.png",
+    condition: "Infectious disease",
+    lastScanDate: "Dec 18, 2024",
+    specialty: "Internist",
+    status: "Confirmed",
+  },
+  // Add more mock patients here...
+] as const
+
+
 export default function PatientDetailsPage() {
   const [darkMode, setDarkMode] = useState(false)
   const [activeTab, setActiveTab] = useState("informations")
+  const [searchTerm, setSearchTerm] = useState('')
+
+
+
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -41,19 +69,34 @@ export default function PatientDetailsPage() {
             <InfoSection title="Medical History" items={MEDICAL_HISTORY} />
           </div>
         )
-      case "physical":
-        return <PhysicalExamination />
+      case "physical": return <PhysicalExamination />
+      case "bioscan":
+        return <BioScan />
       default:
         return null
-    }
+    }  
   }
 
+   
+  const filteredPatients = patients.filter(patient => {
+    
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      patient.name.toLowerCase().includes(searchLower) ||
+      patient.condition.toLowerCase().includes(searchLower) ||
+      patient.specialty.toLowerCase().includes(searchLower) ||
+      patient.status.toLowerCase().includes(searchLower)
+    )
+  })
+
+  
   return (
     <div className={darkMode ? "dark" : ""}>
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
         <Sidebar darkMode={darkMode} onDarkModeChange={setDarkMode} />
         <div className="flex-1 ml-64">
-          <Header doctor={{ name: "Dr. Arma", avatar: "/avatars/doctor.png" }} />
+          <Header doctor={{ name: "Dr. Arma", avatar: "/avatars/doctor.png" }} value={searchTerm}
+            onSearch={setSearchTerm} />
           <main className="p-6">
             <h1 className="text-2xl font-semibold mb-6 dark:text-white">Kristin Watson</h1>
 

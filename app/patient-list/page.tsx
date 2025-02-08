@@ -7,7 +7,7 @@ import { PatientList } from "../patient-list/components/patient-list"
 
 
 
-const MOCK_PATIENTS = [
+const patients = [
   {
     id: "1",
     name: "Kristin Watson",
@@ -38,15 +38,31 @@ const DOCTOR = {
 
 export default function DashboardPage() {
   const [darkMode, setDarkMode] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  
+  const filteredPatients = patients.filter(patient => {
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      patient.name.toLowerCase().includes(searchLower) ||
+      patient.condition.toLowerCase().includes(searchLower) ||
+      patient.specialty.toLowerCase().includes(searchLower) ||
+      patient.status.toLowerCase().includes(searchLower)
+    )
+  })
+  
 
   return (
     <div className={darkMode ? "dark" : ""}>
       <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
         <Sidebar darkMode={darkMode} onDarkModeChange={setDarkMode} />
         <div className="flex-1 ml-64">
-          <Header doctor={DOCTOR} />
+          <Header 
+            doctor={{ name: "Dr. Arma", avatar: "/doctor-avatar.jpg" }} 
+            value={searchTerm}
+            onSearch={setSearchTerm}
+          />
           <main className="h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900">
-            <PatientList patients={MOCK_PATIENTS} />
+          <PatientList patients={filteredPatients} />
           </main>
         </div>
       </div>

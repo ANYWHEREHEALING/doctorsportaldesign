@@ -29,7 +29,7 @@ export function Sidebar({ darkMode, onDarkModeChange }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 px-4 space-y-2">
           <Link
-            href="/patients"
+            href="/patient-list"
             className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
           >
             <Home className="h-5 w-5" />

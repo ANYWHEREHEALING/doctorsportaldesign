@@ -6,6 +6,7 @@ import { InfoSection } from "@/app/patient-list/components/info-section"
 import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui"
 import { Sidebar } from "@/app/patient-list/components/sidebar"
 import { Header } from "@/app/patient-list/components/header"
+import { PhysicalExamination } from "@/app/patient-list/components/physicalE"
 
 const PATIENT_INFO = [
   { label: "Full Name", value: "ARMA YOGA PRASETYA" },
@@ -29,6 +30,23 @@ const BODY_POINTS = [
 
 export default function PatientDetailsPage() {
   const [darkMode, setDarkMode] = useState(false)
+  const [activeTab, setActiveTab] = useState("informations")
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "informations":
+        return (
+          <div className="space-y-6">
+            <InfoSection title="Patient Information" items={PATIENT_INFO} />
+            <InfoSection title="Medical History" items={MEDICAL_HISTORY} />
+          </div>
+        )
+      case "physical":
+        return <PhysicalExamination />
+      default:
+        return null
+    }
+  }
 
   return (
     <div className={darkMode ? "dark" : ""}>
@@ -39,7 +57,12 @@ export default function PatientDetailsPage() {
           <main className="p-6">
             <h1 className="text-2xl font-semibold mb-6 dark:text-white">Kristin Watson</h1>
 
-            <Tabs defaultValue="informations" className="mb-6">
+            <Tabs 
+              value={activeTab}
+              onValueChange={setActiveTab}
+              defaultValue="informations" 
+              className="mb-6"
+            >
               <TabsList>
                 <TabsTrigger value="summary" className="flex gap-2">
                   Summary Patient
@@ -57,10 +80,7 @@ export default function PatientDetailsPage() {
               <div>
                 <BodyDiagram points={BODY_POINTS} />
               </div>
-              <div className="space-y-6">
-                <InfoSection title="Patient Information" items={PATIENT_INFO} />
-                <InfoSection title="Medical History" items={MEDICAL_HISTORY} />
-              </div>
+              <div>{renderTabContent()}</div>
             </div>
           </main>
         </div>

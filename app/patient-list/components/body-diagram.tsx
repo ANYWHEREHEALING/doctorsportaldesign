@@ -29,22 +29,15 @@ export function BodyDiagram({ points }: BodyDiagramProps) {
     const img = new Image()
     img.crossOrigin = "anonymous"
     img.src =
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot%202025-02-08%20at%2012.34.51%E2%80%AFAM-jOHch3RracE9AmcyyuMeHGpBrQzZES.png"
+      "/summary.png"
 
     img.onload = () => {
-      ctx.fillStyle = "#E2E8F0"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Draw body outline
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
       // Draw points
-      points.forEach((point) => {
-        ctx.beginPath()
-        ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI)
-        ctx.fillStyle = "#EF4444"
-        ctx.fill()
-      })
+     
     }
   }, [points])
 

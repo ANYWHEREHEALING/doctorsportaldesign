@@ -4,16 +4,28 @@ import Image from "next/image"
 import { Button , Switch } from "@/app/components/ui"
 import { usePathname } from 'next/navigation';
 
+import { useRouter } from 'next/navigation';
+
 interface SidebarProps {
   darkMode: boolean
   onDarkModeChange: (value: boolean) => void
 }
 
 
-// ... existing code ...
+
 
 export function Sidebar({ darkMode, onDarkModeChange }: SidebarProps) {
+
+  const router = useRouter();
   const pathname = usePathname();
+
+  const handleLogout = () => {
+    // Add actual logout logic here
+    localStorage.removeItem('token');
+    router.push('/');
+  };
+  
+
   return (
     <div className="fixed left-0 top-0 h-screen w-64 border-r bg-white dark:bg-gray-900 dark:border-gray-800">
       <div className="flex flex-col h-full">
@@ -59,7 +71,9 @@ export function Sidebar({ darkMode, onDarkModeChange }: SidebarProps) {
 
         {/* Footer */}
         <div className="p-4 border-t dark:border-gray-800">
-          <Button className="w-full justify-start text-gray-600 dark:text-gray-300">
+          <Button className="w-full justify-start text-gray-600 dark:text-gray-300"
+          onClick={handleLogout}
+          >
             <LogOut className="mr-2 h-5 w-5" />
             Logout
           </Button>

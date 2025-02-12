@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Button, Input, Label, Switch } from "@/app/components/ui"
+import { Button, Input,  Switch } from "@/app/components/ui"
 import { Moon, Sun } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -42,7 +42,7 @@ export default function LoginPage() {
         throw new Error(errorData.message || "Login failed")
       }
 
-      const data = await response.json()
+      
       router.push("/patient-list")
     } catch (err) {
       setError((err as Error).message || "An error occurred during login")
@@ -120,7 +120,7 @@ export default function LoginPage() {
               </Link>
             </div>
             <div className="text-center text-sm text-gray-600 dark:text-gray-300">
-              Don't have an account? {' '}
+              Don&apos;t have an account? {' '}
               <Link href="/" className="text-[#8BA872] hover:underline">
                 Register
               </Link>

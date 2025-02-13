@@ -5,6 +5,8 @@ import { Sidebar } from "../patient-list/components/sidebar"
 import { Header } from "../patient-list/components/header"
 import { PatientList } from "../patient-list/components/patient-list"
 
+import { useRouter } from 'next/navigation'
+
 
 
 const patients = [
@@ -36,6 +38,7 @@ const patients = [
 export default function DashboardPage() {
   const [darkMode, setDarkMode] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const router = useRouter()
   
   const filteredPatients = patients.filter(patient => {
     const searchLower = searchTerm.toLowerCase()
@@ -47,6 +50,10 @@ export default function DashboardPage() {
     )
   })
   
+  const handlePatientClick = (patientId: string) => {
+    router.push(`/patient-list/${patientId}`)
+  }
+
 
   return (
     <div className={darkMode ? "dark" : ""}>
@@ -59,7 +66,9 @@ export default function DashboardPage() {
             onSearch={setSearchTerm}
           />
           <main className="h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900">
-          <PatientList patients={filteredPatients} />
+          <PatientList 
+            patients={filteredPatients} 
+            onPatientClick={handlePatientClick} />
           </main>
         </div>
       </div>

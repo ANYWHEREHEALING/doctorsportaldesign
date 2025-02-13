@@ -5,10 +5,11 @@ import { MoreVertical, ChevronLeft, ChevronRight } from "lucide-react"
 import type { Patient } from "../types/patient"
 
 interface PatientListProps {
-    patients: ReadonlyArray<Patient>
-  }
+  patients: ReadonlyArray<Patient>
+  onPatientClick?: (patientId: string) => void
+}
 
-export function PatientList({ patients }: PatientListProps) {
+export function PatientList ({ patients, onPatientClick }: PatientListProps){
 
 
   return (
@@ -20,7 +21,7 @@ export function PatientList({ patients }: PatientListProps) {
       <div className="flex-1 px-6">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow >
               <TableHead className="w-[300px] dark:text-white">Patient Details</TableHead>
               <TableHead className="dark:text-white">Last Scan date</TableHead>
               <TableHead className="dark:text-white">Symptom</TableHead>
@@ -30,7 +31,11 @@ export function PatientList({ patients }: PatientListProps) {
           </TableHeader>
           <TableBody>
             {patients.map((patient) => (
-              <TableRow key={patient.id}>
+              <TableRow 
+              key={patient.id}
+              onClick={() => onPatientClick?.(patient.id)}
+              className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+            >
                 <TableCell>
                   <div className="flex items-center dark:text-white gap-3">
                     <Avatar className="dark:text-white">

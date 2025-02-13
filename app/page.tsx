@@ -177,13 +177,19 @@ export default function LoginPage() {
                 className="border-gray-400 dark:border-gray-600" 
               />
               <Label htmlFor="privacy" className="text-sm text-gray-600 dark:text-gray-300">
-                By Login in Anywhere Healing, I agree the privacy policy.
+                By logging into Anywhere Healing, I agree to the privacy policy. {/* Fixed typo */}
               </Label>
             </div>
 
+
             </div>
 
-            <Button type="submit" className="w-full h-12 bg-[#8BA872] hover:bg-[#7A946A] text-white rounded-lg">
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-[#8BA872] hover:bg-[#7A946A] text-white rounded-lg"
+              disabled={!agreePrivacy}
+              title={!agreePrivacy ? "You must agree to the privacy policy" : ""}
+            >
               Register
             </Button>
 

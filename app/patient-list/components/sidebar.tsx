@@ -19,12 +19,24 @@ export function Sidebar({ darkMode, onDarkModeChange }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    // Add actual logout logic here
-    localStorage.removeItem('token');
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/doctor/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-XSRF-TOKEN": process.env.NEXT_PUBLIC_XSRF_TOKEN || '',
+          "Accept": "application/json"
+        },
+        credentials: "include" 
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.removeItem('token');
+      router.push('/');
+    }
   };
-  
 
   return (
     <div className="fixed left-0 top-0 h-screen w-64 border-r bg-white dark:bg-gray-900 dark:border-gray-800">

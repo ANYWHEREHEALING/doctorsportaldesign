@@ -1,59 +1,63 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Sidebar } from "../patient-list/components/sidebar"
 import { Header } from "../patient-list/components/header"
-import { PatientList } from "../patient-list/components/patient-list"
-
+import PatientList from "../patient-list/components/patient-list"
 import { useRouter } from 'next/navigation'
-
-
-
-const patients = [
-  {
-    id: "1",
-    name: "Kristin Watson",
-    avatar: "/avatars/01.png",
-    condition: "Infectious disease",
-    lastScanDate: "Dec 18, 2024",
-    specialty: "Geriatrician",
-    status: "Confirmed",
-  },
-  {
-    id: "2",
-    name: "Jacob Jones",
-    avatar: "/avatars/02.png",
-    condition: "Infectious disease",
-    lastScanDate: "Dec 18, 2024",
-    specialty: "Internist",
-    status: "Confirmed",
-  },
-  // Add more mock patients here...
-] as const
-
-
-
-
+import type { Patient } from "../patient-list/types/patient"
 
 export default function DashboardPage() {
+  const [patients, setPatients] = useState<Patient[]>([])
   const [darkMode, setDarkMode] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [doctor, setDoctor] = useState<{ name: string; avatar: string } | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  
-  const filteredPatients = patients.filter(patient => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      patient.name.toLowerCase().includes(searchLower) ||
-      patient.condition.toLowerCase().includes(searchLower) ||
-      patient.specialty.toLowerCase().includes(searchLower) ||
-      patient.status.toLowerCase().includes(searchLower)
-    )
-  })
-  
-  const handlePatientClick = (patientId: string) => {
-    router.push(`/patient-list/${patientId}`)
+
+  useEffect(() => {
+    const storedDoctor = localStorage.getItem('doctor')
+    if (storedDoctor) setDoctor(JSON.parse(storedDoctor))
+
+      const fetchPatients = async () => {
+        setIsLoading(true)
+        try {
+          const token = localStorage.getItem('token')
+          if (!token) {
+            router.push('/login')
+            return
+          }
+      
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/patients?page=${currentPage}&search=${searchTerm}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}` 
+              }
+            }
+          )
+        const data = await res.json()
+        setPatients(data.patients)
+        setTotalPages(data.totalPages)
+      } catch (err) {
+        console.error('Error fetching patients:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchPatients()
+  }, [currentPage, searchTerm])
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
   }
 
+  const handlePatientClick = (patient: Patient) => {
+    router.push(`/patient-list/${patient.id}`)
+  }
 
   return (
     <div className={darkMode ? "dark" : ""}>
@@ -61,18 +65,22 @@ export default function DashboardPage() {
         <Sidebar darkMode={darkMode} onDarkModeChange={setDarkMode} />
         <div className="flex-1 ml-64">
           <Header 
-            doctor={{ name: "Dr. Arma", avatar: "/doctor-avatar.jpg" }} 
+            doctor={doctor || { name: 'DOC', avatar: '' }} 
             value={searchTerm}
             onSearch={setSearchTerm}
           />
           <main className="h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900">
-          <PatientList 
-            patients={filteredPatients} 
-            onPatientClick={handlePatientClick} />
+            <PatientList 
+              patients={patients}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              onPatientClick={handlePatientClick}
+              isLoading={isLoading}
+            />
           </main>
         </div>
       </div>
     </div>
   )
 }
-

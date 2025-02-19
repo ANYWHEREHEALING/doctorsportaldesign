@@ -22,10 +22,10 @@ export default function LoginPage() {
       document.documentElement.classList.remove("dark")
     }
   }, [darkMode])
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-  
+    
     try {
       const response = await fetch('https://api.anywherehealing.com/api/doctor/login', {
         method: "POST",
@@ -36,12 +36,22 @@ export default function LoginPage() {
         },
         body: JSON.stringify({ email, password })
       })
+  
+      const data = await response.json()
       
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Login failed")
+        throw new Error(data.message || "Login failed")
       }
+  
+     
+      if (!data?.access_token || !data?.doctor) {
+        console.error('API response:', data)
+        throw new Error("Invalid authentication response format - missing access_token or doctor data")
+      }
+  
 
+      localStorage.setItem('token', data.access_token)
+      localStorage.setItem('doctor', JSON.stringify(data.doctor))
       
       router.push("/patient-list")
     } catch (err) {

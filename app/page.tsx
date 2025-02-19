@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [passwordConfirmation, setPasswordConfirmation] = useState("")
   const [error, setError] = useState("")
   const [agreePrivacy, setAgreePrivacy] = useState(false)
-  const [showPassword, setShowPassword] = useState(false) // Add this line
+  const [showPassword, setShowPassword] = useState(false) 
   const router = useRouter()
 
   useEffect(() => {
@@ -27,7 +27,6 @@ export default function LoginPage() {
       document.documentElement.classList.remove("dark")
     }
   }, [darkMode])
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,7 +67,16 @@ export default function LoginPage() {
       if (!response.ok) {
         const errorData = await response.json()
         console.error("Registration error:", errorData)
-        throw new Error(errorData.message || "Registration failed")
+        
+        let errorMessage = errorData.message || "Registration failed";
+        
+        if (errorData.errors) {
+          errorMessage = Object.entries(errorData.errors)
+            .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+            .join('\n');
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -179,7 +187,7 @@ export default function LoginPage() {
                 className="border-gray-400 dark:border-gray-600"
               />
               <Label htmlFor="privacy" className="text-sm text-gray-600 dark:text-gray-300">
-                By logging into Anywhere Healing, I agree to the privacy policy. {/* Fixed typo */}
+                By logging into Anywhere Healing, I agree to the privacy policy. 
               </Label>
             </div>
 

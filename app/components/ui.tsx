@@ -229,6 +229,18 @@ const TableCell = React.forwardRef<
 ))
 TableCell.displayName = "TableCell"
 
+const Skeleton = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("animate-pulse rounded-md bg-muted", className)}
+    {...props}
+  />
+))
+Skeleton.displayName = "Skeleton"
+
 const Tabs = TabsPrimitive.Root
 
 const TabsList = React.forwardRef<
@@ -262,7 +274,7 @@ const TabsTrigger = React.forwardRef<
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
 // Update exports at bottom
-export { Button, Input, Label, Checkbox, Switch, Avatar, AvatarFallback, AvatarImage, Table, TableBody, TableCell, TableHead, TableHeader, TableRow , Tabs, TabsList, TabsTrigger }
+export { Button, Input,Skeleton, Label, Checkbox, Switch, Avatar, AvatarFallback, AvatarImage, Table, TableBody, TableCell, TableHead, TableHeader, TableRow , Tabs, TabsList, TabsTrigger }
 
 
 

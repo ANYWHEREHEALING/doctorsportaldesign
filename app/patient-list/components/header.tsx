@@ -26,7 +26,7 @@ export function Header({ doctor, value, onSearch }: HeaderProps) {
         <span className="text-sm font-medium dark:text-white">Dr. Arma</span>
         <Avatar className="dark:text-white">
           <AvatarImage src={doctor.avatar} />
-          <AvatarFallback>DA</AvatarFallback>
+          <AvatarFallback>{doctor.name[0]}</AvatarFallback>
         </Avatar>
       </div>
     </div>

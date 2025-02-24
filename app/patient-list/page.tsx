@@ -1,23 +1,23 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Sidebar } from "../patient-list/components/sidebar"
-import { Header } from "../patient-list/components/header"
-import PatientList from "../patient-list/components/patient-list"
+import { Sidebar } from "./components/sidebar"
+import { Header } from "./components/header"
+import { Patient } from "./types/patient"
 import { useRouter } from 'next/navigation'
-import type { Patient } from "../patient-list/types/patient"
+import { cn } from '@/app/libs/utils'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui"
 
 export default function DashboardPage() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [darkMode, setDarkMode] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [doctor, setDoctor] = useState<{ name: string; avatar: string } | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const [allPatients, setAllPatients] = useState<Patient[]>([])
-
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -37,12 +37,11 @@ export default function DashboardPage() {
         })
 
         const res = await fetch(
-          `https://api.anywherehealing.com/api/doctor/patient/all`, 
+          `https://api.anywherehealing.com/api/doctor/patient/all?page=${currentPage}`,
           {
             method: 'GET',
             headers: headers
           }
-        
         )
 
         if (!res.ok) {
@@ -51,12 +50,15 @@ export default function DashboardPage() {
         }
 
         const data = await res.json()
-        if (!Array.isArray(data?.data)) {
-          throw new Error('Invalid response structure - expected patients array')
-        }
         
-        setAllPatients(data.data)
-        setPatients(data.data)
+        if (!data?.data || typeof data.data !== 'object' || !Array.isArray(data.data.data)) {
+          throw new Error('Invalid response structure - expected paginated patients array')
+        }
+
+        setAllPatients(data.data.data)
+        setPatients(data.data.data)
+        setTotalPages(Math.max(Number(data.data.last_page) || 1, 1))
+        setTotalItems(Math.max(Number(data.data.total) || 0, 0))
       } catch (err: any) {
         console.error('Fetch error:', err)
         setError(err.message || 'Failed to load patient list')
@@ -69,23 +71,48 @@ export default function DashboardPage() {
     }
 
     fetchPatients()
-  }, [router])
-      
+  }, [router, currentPage])
 
-    useEffect(() => {
-      const filtered = allPatients?.filter(patient => 
-        patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      ) || []
-      setPatients(filtered)
-    }, [searchTerm, allPatients])
+  useEffect(() => {
+    const filtered = allPatients.filter(patient => 
+      patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    setPatients(filtered)
+  }, [searchTerm, allPatients])
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
+    }
   }
 
   const handlePatientClick = (patient: Patient) => {
     router.push(`/patient-list/${patient.id}`)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 bg-red-50 rounded-lg mt-8">
+        <div className="text-red-600 font-medium mb-4">
+          Error loading patients: {error}
+        </div>
+        <button
+          onClick={() => handlePageChange(currentPage)}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -94,16 +121,85 @@ export default function DashboardPage() {
         <Sidebar darkMode={darkMode} onDarkModeChange={setDarkMode} />
         <div className="flex-1 ml-64">
           <Header 
-            doctor={doctor || { name: 'DOC', avatar: '' }} 
+            doctor={{ name: 'DOC', avatar: '' }} 
             value={searchTerm}
             onSearch={setSearchTerm}
           />
-          <main className="h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900">
-            <PatientList 
-                patients={patients}
-                onPatientClick={handlePatientClick}
-                isLoading={isLoading}
-            />
+          <main className="h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900 p-6">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Patient Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {patients.map((patient) => (
+                    <TableRow 
+                      key={patient.id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handlePatientClick(patient)}
+                    >
+                      <TableCell className="flex items-center gap-3">
+                        <img 
+                          src={patient.avatar} 
+                          alt={patient.name}
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                        {patient.name}
+                      </TableCell>
+                      <TableCell>{patient.email}</TableCell>
+                      <TableCell>
+                        <span className={cn(
+                          "px-3 py-1 rounded-full text-sm",
+                          patient.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                          patient.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        )}>
+                          {patient.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          className="text-blue-600 hover:text-blue-800"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handlePatientClick(patient)
+                          }}
+                        >
+                          View Details
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              <div className="flex items-center justify-between px-6 py-4 border-t">
+                <div className="text-sm text-gray-600">
+                  Showing {(currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, totalItems)} of {totalItems} patients
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border rounded-md disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 border rounded-md disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
           </main>
         </div>
       </div>

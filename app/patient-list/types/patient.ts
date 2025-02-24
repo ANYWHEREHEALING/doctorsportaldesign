@@ -6,7 +6,6 @@ export interface Patient {
   lastScanDate: string
   specialty: string
   status: "Confirmed" | "Pending" | "Cancelled"
-  // Add any additional fields from your API
   email?: string
   phone?: string
   address?: string

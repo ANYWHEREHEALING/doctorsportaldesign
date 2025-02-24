@@ -21,14 +21,15 @@ export function Sidebar({ darkMode, onDarkModeChange }: SidebarProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/doctor/logout`, {
+      const formData = new FormData()
+      await fetch('https://api.anywherehealing.com/api/doctor/logout', {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "X-XSRF-TOKEN": process.env.NEXT_PUBLIC_XSRF_TOKEN || '',
-          "Accept": "application/json"
+          "Accept": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
         },
-        credentials: "include" 
+        body: formData
       });
     } catch (err) {
       console.error("Logout error:", err);

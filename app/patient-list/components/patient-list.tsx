@@ -1,151 +1,262 @@
-"use client"
+import { useState, useEffect } from 'react';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui"
-import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui"
-import { Button } from "@/app/components/ui"
-import { MoreVertical, ChevronLeft, ChevronRight } from "lucide-react"
-import type { Patient } from "../types/patient"
-import { Skeleton } from "@/app/components/ui"
-
-interface PatientListProps {
-  patients: Patient[]
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-  onPatientClick: (patient: Patient) => void
-  isLoading?: boolean
+interface Patient {
+  id: string;
+  name: string;
+  email: string;
+  // Add other patient fields as needed
 }
 
-export default function PatientList({ 
-  patients,
-  currentPage = 1,
-  totalPages,
-  onPageChange,
-  onPatientClick,
-  isLoading = false
-}: PatientListProps) {
-  const handlePreviousPage = () => {
-    if (currentPage > 1) onPageChange(currentPage - 1)
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    data: Patient[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    per_page: number;
+  };
+}
+
+const PatientList = () => {
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPatients = async (page: number) => {
+    try {
+      setIsLoading(true);
+      const res = await fetch(
+        `https://api.anywherehealing.com/api/doctor/patient/all?page=${page}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Accept': 'application/json'
+          }
+        }
+      );
+
+      const data: ApiResponse = await res.json();
+
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Failed to fetch patients');
+      }
+
+      if (!data.data || typeof data.data !== 'object') {
+        throw new Error('Invalid API response structure');
+      }
+
+      const { data: patientsData, last_page, total, per_page } = data.data;
+
+      if (!Array.isArray(patientsData)) {
+        throw new Error('Patients data is not an array');
+      }
+
+      setPatients(patientsData);
+      setTotalPages(Math.max(Number(last_page) || 1, 1));
+      setTotalItems(Math.max(Number(total) || 0, 0));
+      setError(null);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load patients');
+      setPatients([]);
+      setTotalItems(0);
+      setTotalPages(1);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients(currentPage);
+  }, [currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading patients...</p>
+      </div>
+    );
   }
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) onPageChange(currentPage + 1)
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 bg-red-50 rounded-lg mt-8">
+        <div className="text-red-600 font-medium mb-4">
+          Error loading patients: {error}
+        </div>
+        <button
+          onClick={() => fetchPatients(currentPage)}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-6">
-        <h1 className="text-2xl font-semibold dark:text-white">Patient List</h1>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Patient Directory</h1>
+      
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {patients.length === 0 ? (
+          <div className="text-center p-8 text-gray-500">
+            No patients found in the system
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">Patient Name</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">Email Address</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {patients.map((patient) => (
+                    <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{patient.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{patient.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <a
+                          href={`/patient-list/${patient.id}`}
+                          className="text-indigo-600 hover:text-indigo-900 font-medium"
+                        >
+                          View Profile →
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-      <div className="flex-1 px-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[300px] dark:text-white">Patient Details</TableHead>
-              <TableHead className="dark:text-white">Last Scan date</TableHead>
-              <TableHead className="dark:text-white">Symptom</TableHead>
-              <TableHead className="dark:text-white">Status</TableHead>
-              <TableHead className="text-right dark:text-white">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array(5).fill(0).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-[120px]" />
-                        <Skeleton className="h-3 w-[80px]" />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-[70px]" /></TableCell>
-                  <TableCell className="text-right">
-                    <Skeleton className="h-8 w-8 rounded-md" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              patients.map((patient) => (
-                <TableRow 
-                  key={patient.id}
-                  onClick={() => onPatientClick(patient)}
-                  className="hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={patient.avatar} />
-                        <AvatarFallback>{patient.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium dark:text-white">{patient.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {patient.condition}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="dark:text-gray-300">{patient.lastScanDate}</TableCell>
-                  <TableCell className="dark:text-gray-300">{patient.specialty}</TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      patient.status === 'Confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-                      patient.status === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
-                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                    }`}>
-                      {patient.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      <div className="p-6 border-t dark:border-gray-800 flex items-center justify-between">
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={handlePreviousPage}
-          disabled={currentPage === 1 || isLoading}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <Button
-              key={page}
-              variant={page === currentPage ? "default" : "ghost"}
-              className="w-10 h-10"
-              onClick={() => onPageChange(page)}
-              disabled={isLoading}
-            >
-              {page}
-            </Button>
-          ))}
-        </div>
-        <Button 
-          variant="outline" 
-          size="icon"
-          onClick={handleNextPage}
-          disabled={currentPage === totalPages || isLoading}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              patientsCount={patients.length}
+              totalItems={totalItems}
+              onPageChange={handlePageChange}
+              className="px-6 py-4 border-t border-gray-200 bg-gray-50"
+            />
+          </>
+        )}
       </div>
     </div>
-  )
+  );
+};
+
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  patientsCount: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  className?: string;
 }
+
+const Pagination = ({
+  currentPage,
+  totalPages,
+  patientsCount,
+  totalItems,
+  onPageChange,
+  className
+}: PaginationProps) => {
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const itemsPerPage = 10;
+
+  const firstItem = Math.max((currentPage - 1) * itemsPerPage + 1, 1);
+  const lastItem = Math.min(
+    (currentPage - 1) * itemsPerPage + patientsCount,
+    totalItems
+  );
+
+  return (
+    <div className={`flex items-center justify-between ${className || ''}`}>
+      <div className="flex-1 flex justify-between sm:hidden">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <span className="text-sm text-gray-700 self-center px-4">
+          Page {currentPage} of {totalPages}
+        </span>
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+
+      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Showing <span className="font-medium">{firstItem}</span> to{' '}
+            <span className="font-medium">{lastItem}</span> of{' '}
+            <span className="font-medium">{totalItems}</span> patients
+          </p>
+        </div>
+        
+        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <span className="sr-only">Previous</span>
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+
+          {pageNumbers.map(number => (
+            <button
+              key={number}
+              onClick={() => onPageChange(number)}
+              className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                currentPage === number
+                  ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              {number}
+            </button>
+          ))}
+
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <span className="sr-only">Next</span>
+            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </div>
+  );
+};
+
+export default PatientList;

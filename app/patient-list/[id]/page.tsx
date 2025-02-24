@@ -23,6 +23,8 @@ interface PatientDetails {
 }
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
+  const [physicalData, setPhysicalData] = useState<any>(null)
+
   const [darkMode, setDarkMode] = useState(false)
   const [activeTab, setActiveTab] = useState("informations")
   const [searchTerm, setSearchTerm] = useState('')
@@ -33,18 +35,31 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [patientRes, bioRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/doctor/patient/${params.id}`, {
+        const [patientRes, bioscanRes] = await Promise.all([
+          fetch(`https://api.anywherehealing.com/api/doctor/patient/${params.id}`, {
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Accept': 'application/json'
             }
+          }).then(res => {
+            if (!res.ok) throw new Error('Patient fetch failed');
+            return res.json();
           }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/doctor/patient/get-bioscan-record/${params.id}`, {
+          fetch(`https://api.anywherehealing.com/api/doctor/patient/get-bioscan-record/${params.id}`, {
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Accept': 'application/json'
             }
+          }).then(res => {
+            if (!res.ok) throw new Error('Bioscan fetch failed');
+            return res.json();
           })
-        ])
+      ]);
+
+      if (!patientRes.data || !bioscanRes.data) {
+        console.error('API Responses:', { patientRes, bioscanRes });
+        throw new Error(patientRes.message || bioscanRes.message || 'Missing patient data');
+      }
 
         if (!patientRes.ok) throw new Error('Failed to fetch patient data')
         if (!bioRes.ok) throw new Error('Failed to fetch bioscan data')
@@ -53,10 +68,16 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
         const bioData = await bioRes.json()
 
         setPatientData({
-          ...patientData,
+          id: patientData.id,
+          name: patientData.name,
+          avatar: patientData.avatar || '/default-avatar.png',
+          condition: patientData.condition,
+          lastScanDate: patientData.last_scan_date,
+          specialty: patientData.specialty,
+          status: patientData.status,
           medicalHistory: [
             { label: "Allergies", value: patientData.allergies || "None" },
-            { label: "Chronic Conditions", value: patientData.chronicConditions || "None" },
+            { label: "Chronic Conditions", value: patientData.chronic_conditions || "None" },
             { label: "Surgeries", value: patientData.surgeries || "None" }
           ],
           patientInfo: [
@@ -74,6 +95,29 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
     }
 
     fetchData()
+  }, [params.id])
+
+  useEffect(() => {
+    const fetchPhysicalData = async () => {
+      const res = await fetch(`https://api.anywherehealing.com/api/doctor/patient/physical/${params.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/json'
+        }
+      })
+  
+      if (!res.ok) {
+        throw new Error('Physical data fetch failed');
+      }
+      
+      const physicalData = await res.json();
+      if (!physicalData?.data) {
+        throw new Error('Invalid physical data structure');
+      }
+      const data = await res.json()
+      setPhysicalData(data)
+    }
+    fetchPhysicalData()
   }, [params.id])
 
   const renderTabContent = () => {

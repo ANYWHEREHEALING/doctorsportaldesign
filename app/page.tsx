@@ -48,19 +48,19 @@ export default function LoginPage() {
 
     try {
       console.log("Attempting to register with:", { name, email, password })
+      const formData = new FormData()
+      formData.append('name', name)
+      formData.append('email', email)
+      formData.append('password', password)
+      formData.append('password_confirmation', passwordConfirmation)
+
       const response = await fetch('https://api.anywherehealing.com/api/doctor/register', {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "X-XSRF-TOKEN": process.env.NEXT_PUBLIC_XSRF_TOKEN || '',
           "Accept": "application/json"
         },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          password_confirmation: passwordConfirmation
-        })
+        body: formData
       })
       console.log("Response status:", response.status)
 

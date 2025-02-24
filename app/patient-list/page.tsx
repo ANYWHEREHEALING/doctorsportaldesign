@@ -16,40 +16,69 @@ export default function DashboardPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const [allPatients, setAllPatients] = useState<Patient[]>([])
+
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const storedDoctor = localStorage.getItem('doctor')
-    if (storedDoctor) setDoctor(JSON.parse(storedDoctor))
+    const fetchPatients = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) {
+          router.push('/login')
+          return
+        }
 
-      const fetchPatients = async () => {
-        setIsLoading(true)
-        try {
-          const token = localStorage.getItem('token')
-          if (!token) {
-            router.push('/login')
-            return
+        const headers = new Headers({
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        })
+
+        const res = await fetch(
+          `https://api.anywherehealing.com/api/doctor/patient/all`, 
+          {
+            method: 'GET',
+            headers: headers
           }
-      
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/patients?page=${currentPage}&search=${searchTerm}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}` 
-              }
-            }
-          )
+        
+        )
+
+        if (!res.ok) {
+          const errorData = await res.json()
+          throw new Error(errorData.message || 'Failed to fetch patients')
+        }
+
         const data = await res.json()
-        setPatients(data.patients)
-        setTotalPages(data.totalPages)
-      } catch (err) {
-        console.error('Error fetching patients:', err)
+        if (!Array.isArray(data?.data)) {
+          throw new Error('Invalid response structure - expected patients array')
+        }
+        
+        setAllPatients(data.data)
+        setPatients(data.data)
+      } catch (err: any) {
+        console.error('Fetch error:', err)
+        setError(err.message || 'Failed to load patient list')
+        if (err.response?.status === 401) {
+          router.push('/login')
+        }
       } finally {
         setIsLoading(false)
       }
     }
-    
+
     fetchPatients()
-  }, [currentPage, searchTerm])
+  }, [router])
+      
+
+    useEffect(() => {
+      const filtered = allPatients?.filter(patient => 
+        patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patient.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      ) || []
+      setPatients(filtered)
+    }, [searchTerm, allPatients])
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -71,12 +100,9 @@ export default function DashboardPage() {
           />
           <main className="h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900">
             <PatientList 
-              patients={patients}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              onPatientClick={handlePatientClick}
-              isLoading={isLoading}
+                patients={patients}
+                onPatientClick={handlePatientClick}
+                isLoading={isLoading}
             />
           </main>
         </div>

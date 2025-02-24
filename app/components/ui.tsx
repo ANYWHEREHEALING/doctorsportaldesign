@@ -273,8 +273,24 @@ const TabsTrigger = React.forwardRef<
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
+ const ScrollArea = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("relative overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border", className)}
+    {...props}
+  >
+    <div className="h-full w-full rounded-[inherit]">
+      {children}
+    </div>
+  </div>
+))
+ScrollArea.displayName = "ScrollArea"
+
 // Update exports at bottom
-export { Button, Input,Skeleton, Label, Checkbox, Switch, Avatar, AvatarFallback, AvatarImage, Table, TableBody, TableCell, TableHead, TableHeader, TableRow , Tabs, TabsList, TabsTrigger }
+export { Button, Input,Skeleton, Label, ScrollArea  ,Checkbox, Switch, Avatar, AvatarFallback, AvatarImage, Table, TableBody, TableCell, TableHead, TableHeader, TableRow , Tabs, TabsList, TabsTrigger }
 
 
 

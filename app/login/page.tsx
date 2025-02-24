@@ -27,18 +27,22 @@ export default function LoginPage() {
     e.preventDefault()
     
     try {
+      const formData = new FormData()
+      formData.append('email', email)
+      formData.append('password', password)
+
       const response = await fetch('https://api.anywherehealing.com/api/doctor/login', {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           "X-XSRF-TOKEN": process.env.NEXT_PUBLIC_XSRF_TOKEN || '',
-          "Accept": "application/json"
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+          
         },
         body: JSON.stringify({ email, password })
       })
   
       const data = await response.json()
-      
       if (!response.ok) {
         throw new Error(data.message || "Login failed")
       }
@@ -52,6 +56,9 @@ export default function LoginPage() {
 
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('doctor', JSON.stringify(data.doctor))
+      
+      const headers = new Headers()
+      headers.append('Authorization', `Bearer ${data.access_token}`)
       
       router.push("/patient-list")
     } catch (err) {

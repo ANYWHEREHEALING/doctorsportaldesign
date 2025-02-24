@@ -7,17 +7,15 @@ import { cn } from "@/app/libs/utils"
 
 interface BioScan {
   id: string
-  title: string
-  date: string
-  description: string
-  status: "Low" | "Moderate" | "High"
-  musclePain: number
-  energyLevels: number
-  biomarkers?: {
-    adhd: number
-    adrenalFatigue: number
+  scan_date: string
+  condition: string
+  severity: "Low" | "Moderate" | "High"
+  biomarkers: {
+    muscle_pain: number
+    energy_level: number
     inflammation: number
   }
+  notes?: string
 }
 
 interface BioScanProps {

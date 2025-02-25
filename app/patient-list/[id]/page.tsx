@@ -5,7 +5,7 @@ import { Sidebar } from "../components/sidebar"
 import { Header } from "../components/header"
 import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui"
 import { BodyDiagram } from "../components/body-diagram"
-import { BioScan } from "../components/bio-scan"
+import BioScanPage from "../components/bio-scan"
 import { InfoSection } from "../components/info-section"
 import { PhysicalExamination } from "../components/physicalE"
 import { Skeleton } from "@/app/components/ui"
@@ -145,7 +145,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
       case "physical": 
         return <PhysicalExamination />
       case "bioscan":
-        return <BioScan scans={bioScans} />
+        return <BioScanPage scans={bioScans} />
       default:
         return null
     }  

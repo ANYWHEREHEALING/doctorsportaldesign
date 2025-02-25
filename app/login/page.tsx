@@ -56,7 +56,9 @@ export default function LoginPage() {
 
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('doctor', JSON.stringify(data.doctor))
-      
+
+      // In your login handler after successful authentication:
+
       const headers = new Headers()
       headers.append('Authorization', `Bearer ${data.access_token}`)
       

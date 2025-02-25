@@ -12,6 +12,7 @@ export default function NotificationsPage() {
   const [darkMode, setDarkMode] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   interface Notification {
+    id: string;
     message: string;
     date: string;
     status: 'read' | 'unread';
@@ -141,8 +142,8 @@ export default function NotificationsPage() {
                         </TableCell>
                         <TableCell className="dark:text-gray-300">{notification.date}</TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            notification.status === "Unread" 
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            notification.status === "unread" 
                               ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
                               : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
                           }`}>

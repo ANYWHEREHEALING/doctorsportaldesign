@@ -3,6 +3,16 @@ import { Pencil } from "lucide-react"
 interface HeightMeasurementProps {
   value: string
 }
+interface PhysicalData {
+  height?: string
+  weight?: string
+  bloodPressure?: string
+  // Add other relevant fields
+}
+
+interface PhysicalExaminationProps {
+  physicalData: PhysicalData
+}
 
 function HeightMeasurement({ value }: HeightMeasurementProps) {
   return (
@@ -83,13 +93,12 @@ function SleepScore({ score, duration, heartRate }: SleepScoreProps) {
   )
 }
 
-export function PhysicalExamination() {
+export function PhysicalExamination({ physicalData }: PhysicalExaminationProps) {
   return (
     <div className="space-y-6">
-      <HeightMeasurement value="169 CM" />
-      <HeightMeasurement value="169 CM" />
+      <HeightMeasurement value={physicalData?.height || "N/A"} />
+      <HeightMeasurement value={physicalData?.weight || "N/A"} />
       <SleepScore score={78} duration="8h 55mins" heartRate="48bpm" />
     </div>
   )
 }
-

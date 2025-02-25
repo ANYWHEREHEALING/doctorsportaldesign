@@ -11,7 +11,12 @@ export default function NotificationsPage() {
   const router = useRouter()
   const [darkMode, setDarkMode] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [notifications, setNotifications] = useState<any[]>([])
+  interface Notification {
+    message: string;
+    date: string;
+    status: 'read' | 'unread';
+  }
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

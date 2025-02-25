@@ -17,26 +17,48 @@ interface PatientDetails {
   condition: string
   lastScanDate: string
   specialty: string
-  status: string
-  medicalHistory: Array<{ label: string; value: string }>
-  patientInfo: Array<{ label: string; value: string }>
+  status: "Confirmed" | "Pending" | "Cancelled"
+  email: string
+  phone?: string
+  address?: string
+  medicalHistory?: Array<{ label: string; value: string }>
+  patientInfo?: Array<{ label: string; value: string }>
+}
+
+interface BioScan {
+  id: string
+  scan_date: string
+  condition: string
+  severity: "Low" | "Moderate" | "High"
+  biomarkers: {
+    muscle_pain: number
+    energy_level: number
+    inflammation: number
+  }
+  notes?: string
+}
+
+interface PhysicalData {
+  height?: string
+  weight?: string
+  bloodPressure?: string
 }
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
-  const [physicalData, setPhysicalData] = useState<any>(null)
-
+  const { id } = params; // Destructure `id` from `params`
   const [darkMode, setDarkMode] = useState(false)
   const [activeTab, setActiveTab] = useState("informations")
   const [searchTerm, setSearchTerm] = useState('')
   const [patientData, setPatientData] = useState<PatientDetails | null>(null)
-  const [bioScans, setBioScans] = useState<any[]>([])
+  const [bioScans, setBioScans] = useState<BioScan[]>([])
+  const [physicalData, setPhysicalData] = useState<PhysicalData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [patientRes, bioscanRes] = await Promise.all([
-          fetch(`https://api.anywherehealing.com/api/doctor/patient/${params.id}`, {
+          fetch(`https://api.anywherehealing.com/api/doctor/patient/${id}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
               'Accept': 'application/json'
@@ -45,7 +67,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
             if (!res.ok) throw new Error('Patient fetch failed');
             return res.json();
           }),
-          fetch(`https://api.anywherehealing.com/api/doctor/patient/get-bioscan-record/${params.id}`, {
+          fetch(`https://api.anywherehealing.com/api/doctor/patient/get-bioscan-record/${id}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('token')}`,
               'Accept': 'application/json'
@@ -54,39 +76,34 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
             if (!res.ok) throw new Error('Bioscan fetch failed');
             return res.json();
           })
-      ]);
+        ]);
 
-      if (!patientRes.data || !bioscanRes.data) {
-        console.error('API Responses:', { patientRes, bioscanRes });
-        throw new Error(patientRes.message || bioscanRes.message || 'Missing patient data');
-      }
-
-        if (!patientRes.ok) throw new Error('Failed to fetch patient data')
-        if (!bioRes.ok) throw new Error('Failed to fetch bioscan data')
-
-        const patientData = await patientRes.json()
-        const bioData = await bioRes.json()
+        if (!patientRes.data || !bioscanRes.data) {
+          console.error('API Responses:', { patientRes, bioscanRes });
+          throw new Error(patientRes.message || bioscanRes.message || 'Missing patient data');
+        }
 
         setPatientData({
-          id: patientData.id,
-          name: patientData.name,
-          avatar: patientData.avatar || '/default-avatar.png',
-          condition: patientData.condition,
-          lastScanDate: patientData.last_scan_date,
-          specialty: patientData.specialty,
-          status: patientData.status,
+          id: patientRes.data.id as string,
+          name: patientRes.data.name as string,
+          avatar: patientRes.data.avatar as string || '/default-avatar.png',
+          condition: patientRes.data.condition as string,
+          lastScanDate: patientRes.data.last_scan_date as string,
+          specialty: patientRes.data.specialty as string,
+          status: patientRes.data.status as "Confirmed" | "Pending" | "Cancelled",
+          email: patientRes.data.email as string,
           medicalHistory: [
-            { label: "Allergies", value: patientData.allergies || "None" },
-            { label: "Chronic Conditions", value: patientData.chronic_conditions || "None" },
-            { label: "Surgeries", value: patientData.surgeries || "None" }
+            { label: "Allergies", value: patientRes.data.allergies as string || "None" },
+            { label: "Chronic Conditions", value: patientRes.data.chronic_conditions as string || "None" },
+            { label: "Surgeries", value: patientRes.data.surgeries as string || "None" }
           ],
           patientInfo: [
-            { label: "Email", value: patientData.email },
-            { label: "Phone", value: patientData.phone },
-            { label: "Address", value: patientData.address }
+            { label: "Email", value: patientRes.data.email as string },
+            { label: "Phone", value: patientRes.data.phone as string },
+            { label: "Address", value: patientRes.data.address as string }
           ]
         })
-        setBioScans(bioData.results)
+        setBioScans(bioscanRes.data.results)
       } catch (err) {
         console.error('Failed to load patient data:', err)
       } finally {
@@ -95,11 +112,11 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
     }
 
     fetchData()
-  }, [params.id])
+  }, [id])
 
   useEffect(() => {
     const fetchPhysicalData = async () => {
-      const res = await fetch(`https://api.anywherehealing.com/api/doctor/patient/physical/${params.id}`, {
+      const res = await fetch(`https://api.anywherehealing.com/api/doctor/patient/physical/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Accept': 'application/json'
@@ -110,15 +127,14 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
         throw new Error('Physical data fetch failed');
       }
       
-      const physicalData = await res.json();
-      if (!physicalData?.data) {
+      const data = await res.json();
+      if (!data?.data) {
         throw new Error('Invalid physical data structure');
       }
-      const data = await res.json()
-      setPhysicalData(data)
+      setPhysicalData(data.data)
     }
     fetchPhysicalData()
-  }, [params.id])
+  }, [id])
 
   const renderTabContent = () => {
     if (isLoading) return (
@@ -143,9 +159,9 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
           </div>
         )
       case "physical": 
-        return <PhysicalExamination />
+        return <PhysicalExamination physicalData={physicalData || {}} />
       case "bioscan":
-        return <BioScanPage scans={bioScans} />
+        return <BioScanPage id={id} scans={bioScans} />
       default:
         return null
     }  
@@ -186,7 +202,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <BodyDiagram points={[]} /> {/* Add actual body points data */}
+                <BodyDiagram points={[]} />
               </div>
               <div>{renderTabContent()}</div>
             </div>

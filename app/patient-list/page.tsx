@@ -3,13 +3,22 @@
 import { useEffect, useState } from "react"
 import { Sidebar } from "./components/sidebar"
 import { Header } from "./components/header"
-import { Patient } from "./types/patient"
+import { PatientDetails } from "./types/patient"
 import { useRouter } from 'next/navigation'
+import Image from "next/image"
 import { cn } from '@/app/libs/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui"
 
+
+interface ErrorWithResponse extends Error {
+  response?: {
+    status: number
+  }
+}
+
+
 export default function DashboardPage() {
-  const [patients, setPatients] = useState<Patient[]>([])
+  const [patients, setPatients] = useState<PatientDetails[]>([])
   const [darkMode, setDarkMode] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -17,7 +26,7 @@ export default function DashboardPage() {
   const [totalItems, setTotalItems] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const [allPatients, setAllPatients] = useState<Patient[]>([])
+  const [allPatients, setAllPatients] = useState<PatientDetails[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -59,11 +68,12 @@ export default function DashboardPage() {
         setPatients(data.data.data)
         setTotalPages(Math.max(Number(data.data.last_page) || 1, 1))
         setTotalItems(Math.max(Number(data.data.total) || 0, 0))
-      } catch (err: any) {
-        console.error('Fetch error:', err)
-        setError(err.message || 'Failed to load patient list')
-        if (err.response?.status === 401) {
-          router.push('/login')
+      } catch (err: unknown) {
+        console.error('Fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load patient list');
+        
+        if (err instanceof Error && 'response' in err && (err as ErrorWithResponse).response?.status === 401) {
+          router.push('/login');
         }
       } finally {
         setIsLoading(false)
@@ -87,7 +97,7 @@ export default function DashboardPage() {
     }
   }
 
-  const handlePatientClick = (patient: Patient) => {
+  const handlePatientClick = (patient: PatientDetails) => {
     router.push(`/patient-list/${patient.id}`)
   }
 
@@ -144,9 +154,11 @@ export default function DashboardPage() {
                       onClick={() => handlePatientClick(patient)}
                     >
                       <TableCell className="flex items-center gap-3">
-                        <img 
+                        <Image 
                           src={patient.avatar} 
                           alt={patient.name}
+                          width={40}
+                          height={40}
                           className="h-10 w-10 rounded-full object-cover"
                         />
                         {patient.name}

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { ScrollArea } from "@/app/components/ui"
 import { Skeleton } from "@/app/components/ui"
 import { cn } from "@/app/libs/utils"
-import { ArrowLeft, Eye, AlertCircle } from "lucide-react"
+import { ArrowLeft, AlertCircle } from "lucide-react"
 
 interface BioScanData {
   id: string
@@ -20,9 +20,15 @@ interface BioScanData {
   notes?: string
 }
 
-export default function BioScanPage({ params }: { params: { id: string } }) {
+interface ErrorWithResponse extends Error {
+  response?: {
+    status: number
+  }
+}
+
+export default function BioScanPage({ scans, id }: { scans: BioScanData[]; id: string }) {
   const router = useRouter()
-  const [scanData, setScanData] = useState<BioScanData[]>([])
+  const [scanData, setScanData] = useState<BioScanData[]>(scans)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -38,7 +44,7 @@ export default function BioScanPage({ params }: { params: { id: string } }) {
         }
 
         const response = await fetch(
-          `https://api.anywherehealing.com/api/doctor/patient/get-bioscan-record/${params.id}`,
+          `https://api.anywherehealing.com/api/doctor/patient/get-bioscan-record/${id}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -59,19 +65,24 @@ export default function BioScanPage({ params }: { params: { id: string } }) {
         }
 
         setScanData(data.data)
-      } catch (err: any) {
-        console.error('Fetch error:', err)
-        setError(err.message || 'Failed to load bioscan records')
-        if (err.response?.status === 401) {
-          router.push('/login')
+      } catch (err: unknown) {
+        console.error('Fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load bioscan records');
+        
+        if (err instanceof Error && 'response' in err && (err as ErrorWithResponse).response?.status === 401) {
+          router.push('/login');
         }
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchBioScans()
-  }, [params.id, router])
+    if (scans.length === 0) {
+      fetchBioScans()
+    } else {
+      setIsLoading(false)
+    }
+  }, [id, router, scans])
 
   if (isLoading) {
     return (
@@ -109,7 +120,7 @@ export default function BioScanPage({ params }: { params: { id: string } }) {
         >
           <ArrowLeft className="w-5 h-5" />
           Back to Patient
-        </button>
+       </button>
       </div>
 
       <ScrollArea className="h-[calc(100vh-160px)]">

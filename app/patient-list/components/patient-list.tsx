@@ -2,14 +2,23 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Patient } from '../types/patient'
+import { PatientDetails } from '../types/patient'
 import { cn } from '@/app/libs/utils'
 import { Input } from "@/app/components/ui"
 import { Search } from "lucide-react"
+import Image from "next/image";
+
+
+interface ErrorWithResponse extends Error {
+  response?: {
+    status: number
+  }
+}
+
 
 export default function DashboardPage() {
-  const [allPatients, setAllPatients] = useState<Patient[]>([])
-  const [patients, setPatients] = useState<Patient[]>([])
+  const [allPatients, setAllPatients] = useState<PatientDetails[]>([])
+  const [patients, setPatients] = useState<PatientDetails[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
@@ -57,11 +66,12 @@ export default function DashboardPage() {
         setPatients(data.data.data)
         setTotalPages(Math.max(Number(data.data.last_page) || 1, 1))
         setTotalItems(Math.max(Number(data.data.total) || 0, 0))
-      } catch (err: any) {
-        console.error('Fetch error:', err)
-        setError(err.message || 'Failed to load patient list')
-        if (err.response?.status === 401) {
-          router.push('/login')
+      } catch (err: unknown) {
+        console.error('Fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load Patient list ');
+        
+        if (err instanceof Error && 'response' in err && (err as ErrorWithResponse).response?.status === 401) {
+          router.push('/login');
         }
       } finally {
         setIsLoading(false)
@@ -85,7 +95,7 @@ export default function DashboardPage() {
     }
   }
 
-  const handlePatientClick = (patient: Patient) => {
+  const handlePatientClick = (patient: PatientDetails) => {
     router.push(`/patient-list/${patient.id}`)
   }
 
@@ -154,10 +164,12 @@ export default function DashboardPage() {
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <img 
-                            src={patient.avatar} 
-                            alt={patient.name}
-                            className="h-10 w-10 rounded-full object-cover mr-4"
+                        <Image 
+                            src="/summary.png" 
+                            alt="Body diagram" 
+                            width={400} 
+                            height={600}
+                            className="object-contain"
                           />
                           <span className="font-medium text-gray-900">{patient.name}</span>
                         </div>

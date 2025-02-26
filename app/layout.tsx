@@ -1,10 +1,4 @@
-
-import Script from "next/script";
-
-
 import "./globals.css";
-
-
 
 export default function RootLayout({
   children,
@@ -20,7 +14,6 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans">
-        <Script src="https://cdn.tailwindcss.com" strategy="beforeInteractive" />
         {children}
       </body>
     </html>

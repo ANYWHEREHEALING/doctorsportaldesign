@@ -106,16 +106,17 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8">
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-[2rem] border border-[#D1D9CB] dark:border-gray-700 p-8 shadow-sm transition-colors duration-300">
 
-          <div className="flex justify-center mb-8">
-            <div className="relative w-40 h-8">
-              <Image
-                src="/Group.png"
-                alt="Anywhere Healing Logo"
-                fill
-                className="object-contain"
-              />
-            </div>
+        <div className="flex justify-center mb-8">
+          <div className="relative w-40 h-8">
+            <Image
+              src="/Group.png"
+              alt="Anywhere Healing Logo"
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
           </div>
+        </div>
 
           {/* Login Form */}
           <div className="space-y-6">

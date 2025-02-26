@@ -105,7 +105,7 @@ export function Sidebar({ darkMode, onDarkModeChange }: SidebarProps) {
         {doctorData && (
           <div className="mx-4 mb-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
             <p className="text-sm font-medium dark:text-white">{doctorData.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">ID: {doctorData.doctor_id}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400"> REF ID: {doctorData.doctor_id}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{doctorData.email}</p>
           </div>
         )}

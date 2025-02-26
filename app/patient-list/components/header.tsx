@@ -1,6 +1,8 @@
 import { Search } from "lucide-react"
 import { Input } from "@/app/components/ui"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui"
+import { useState } from "react"
+import { useEffect } from "react"
 
 interface HeaderProps {
   doctor: {
@@ -10,7 +12,33 @@ interface HeaderProps {
   value: string
   onSearch: (term: string) => void
 }
+
+
+interface DoctorData {
+  id: number
+  name: string
+  email: string
+  doctor_id: string
+}
+
+
 export function Header({ doctor, value, onSearch }: HeaderProps) {
+
+
+    const [doctorData, setDoctorData] = useState<DoctorData | null>(null)
+
+      useEffect(() => {
+        const storedDoctor = localStorage.getItem('doctor')
+        if (storedDoctor) {
+          try {
+            const doctor = JSON.parse(storedDoctor)
+            setDoctorData(doctor)
+          } catch (err) {
+            console.error('Error parsing doctor data:', err)
+          }
+        }
+      }, [])
+
   return (
     <div className="h-16 border-b dark:border-gray-800 flex items-center justify-between px-6 bg-white dark:bg-gray-900">
       <div className="relative w-96">
@@ -22,13 +50,10 @@ export function Header({ doctor, value, onSearch }: HeaderProps) {
           onChange={(e) => onSearch(e.target.value)}
         />
       </div>
+      {doctorData && 
       <div className="flex items-center gap-3">
-        <span className="text-sm font-medium dark:text-white">Dr. Arma</span>
-        <Avatar className="dark:text-white">
-          <AvatarImage src={doctor.avatar} />
-          <AvatarFallback>{doctor.name[0]}</AvatarFallback>
-        </Avatar>
-      </div>
+        <span className="text-sm font-medium dark:text-white"> Dr {doctorData.name}</span>
+      </div>}
     </div>
   )
 }

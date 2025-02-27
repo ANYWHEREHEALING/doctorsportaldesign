@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Sidebar } from '../components/sidebar'
 import { BodyDiagram } from '../components/body-diagram'
 import PatientInfo from '../components/patient-info'
 import BioScanPage from '../components/bio-scan'
@@ -39,6 +40,8 @@ export default function PatientDetailsContentWrapper({ id }: { id: string }) {
   const [bioScans, setBioScans] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState('summary')
+  const [darkMode, setDarkMode] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,22 +94,12 @@ export default function PatientDetailsContentWrapper({ id }: { id: string }) {
     fetchData()
   }, [id, router])
 
-  if (error) return <ErrorComponent message={error} />
-  if (isLoading || !patientData) return <PatientDetailsSkeleton />
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="py-6">
-          <h1 className="text-2xl font-semibold mb-4">{patientData.information.patient_information.fullname}</h1>
-          
-          <div className="flex space-x-8 border-b mb-6">
-            <TabButton active={true}>Summary Patient</TabButton>
-            <TabButton>Informations</TabButton>
-            <TabButton>Physical Examination</TabButton>
-            <TabButton>BioScan Results</TabButton>
-          </div>
-
+  const renderContent = () => {
+    if (!patientData) return null;
+    
+    switch (activeTab) {
+      case 'summary':
+        return (
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-4">
               <BodyDiagram points={[
@@ -115,7 +108,6 @@ export default function PatientDetailsContentWrapper({ id }: { id: string }) {
                 { x: 200, y: 450 }
               ]} />
             </div>
-
             <div className="col-span-8 space-y-6">
               <PatientInfo patientData={patientData} />
               <PhysicalExamination 
@@ -126,15 +118,88 @@ export default function PatientDetailsContentWrapper({ id }: { id: string }) {
               <BioScanPage scans={bioScans} id={id} />
             </div>
           </div>
+        )
+      case 'information':
+        return <PatientInfo patientData={patientData} />
+      case 'physical':
+        return (
+          <PhysicalExamination 
+            height={patientData.physical_examination.height}
+            weight={patientData.physical_examination.weight}
+            sleepScore={patientData.physical_examination.sleep_score}
+          />
+        )
+      case 'bioscan':
+        return <BioScanPage scans={bioScans} id={id} />
+      default:
+        return null
+    }
+  }
+
+  if (error) return <ErrorComponent message={error} />
+  if (isLoading || !patientData) return <PatientDetailsSkeleton />
+
+  return (
+    <div className={darkMode ? "dark" : ""}>
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+        <Sidebar darkMode={darkMode} onDarkModeChange={setDarkMode} />
+        <div className="flex-1 ml-64">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="py-6">
+              {patientData && (
+                <h1 className="text-2xl font-semibold mb-4">
+                  {patientData.information.patient_information.fullname}
+                </h1>
+              )}
+              
+              <div className="flex space-x-8 border-b mb-6">
+                <TabButton 
+                  active={activeTab === 'summary'} 
+                  onClick={() => setActiveTab('summary')}
+                >
+                  Summary Patient
+                </TabButton>
+                <TabButton 
+                  active={activeTab === 'information'} 
+                  onClick={() => setActiveTab('information')}
+                >
+                  Information
+                </TabButton>
+                <TabButton 
+                  active={activeTab === 'physical'} 
+                  onClick={() => setActiveTab('physical')}
+                >
+                  Physical Examination
+                </TabButton>
+                <TabButton 
+                  active={activeTab === 'bioscan'} 
+                  onClick={() => setActiveTab('bioscan')}
+                >
+                  BioScan Results
+                </TabButton>
+              </div>
+
+              {renderContent()}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function TabButton({ children, active = false }: { children: React.ReactNode; active?: boolean }) {
+function TabButton({ 
+  children, 
+  active = false,
+  onClick
+}: { 
+  children: React.ReactNode
+  active?: boolean
+  onClick?: () => void
+}) {
   return (
     <button
+      onClick={onClick}
       className={`pb-4 border-b-2 ${
         active 
           ? 'border-blue-500 text-blue-600 font-medium' 

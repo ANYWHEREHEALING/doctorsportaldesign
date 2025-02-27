@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import Image from "next/image"
 import { cn } from '@/app/libs/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui"
-
+import { User } from "lucide-react";
 
 interface ErrorWithResponse extends Error {
   response?: {
@@ -151,16 +151,10 @@ export default function DashboardPage() {
                     <TableRow 
                       key={patient.id} 
                       className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handlePatientClick(patient)}
+                      onClick={() => router.push(`/patient-list/${patient.id}`)}
                     >
                       <TableCell className="flex items-center gap-3">
-                        <Image 
-                          src={patient.avatar} 
-                          alt={patient.name}
-                          width={40}
-                          height={40}
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
+                        <User className="h-10 w-10 text-gray-400" />
                         {patient.name}
                       </TableCell>
                       <TableCell>{patient.email}</TableCell>
@@ -175,15 +169,15 @@ export default function DashboardPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <button
-                          className="text-blue-600 hover:text-blue-800"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handlePatientClick(patient)
-                          }}
-                        >
-                          View Details
-                        </button>
+                      <button
+                        className="text-blue-600 hover:text-blue-800"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/patient-list/${patient.id}`);
+                        }}
+                      >
+                        View Details
+                      </button>
                       </TableCell>
                     </TableRow>
                   ))}

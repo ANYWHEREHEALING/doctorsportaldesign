@@ -1,211 +1,200 @@
 "use client"
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { BioScanData } from '../types/patient'
+import MeasurementScale from './measurement-scale'
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { ScrollArea } from "@/app/components/ui"
-import { Skeleton } from "@/app/components/ui"
-import { cn } from "@/app/libs/utils"
-import { ArrowLeft, AlertCircle } from "lucide-react"
-
-interface BioScanData {
-  id: string
-  scan_date: string
-  condition: string
-  severity: "Low" | "Moderate" | "High"
+export interface BioScanWithMetrics extends BioScanData {
+  severity: string
   biomarkers: {
     muscle_pain: number
     energy_level: number
     inflammation: number
   }
-  notes?: string
 }
-
-interface ErrorWithResponse extends Error {
-  response?: {
-    status: number
+interface ApiResponse {
+  success: boolean
+  data: {
+    current_page: number
+    data: BioScanData[]
+    first_page_url: string
+    next_page_url: string | null
+    path: string
+    per_page: number
+    prev_page_url: string | null
+    to: number
   }
 }
 
-export default function BioScanPage({ scans, id }: { scans: BioScanData[]; id: string }) {
+export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]; id: string }) {
   const router = useRouter()
-  const [scanData, setScanData] = useState<BioScanData[]>(scans)
+  const [scanData, setScanData] = useState<BioScanWithMetrics[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
 
-  useEffect(() => {
-    const fetchBioScans = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          router.push('/login')
-          return
-        }
+  const getSeverityFromCodigos = (codigos: Array<{ valor: number }>): string => {
+    const avgValue = codigos.reduce((sum, code) => sum + Math.abs(code.valor), 0) / codigos.length
+    if (avgValue <= 30) return "Low"
+    if (avgValue <= 60) return "Moderate"
+    return "High"
+  }
 
-        const response = await fetch(
-          `https://api.anywherehealing.com/api/doctor/patient/get-bioscan-record/${id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json'
-            }
-          }
-        )
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || 'Failed to fetch bioscan records')
-        }
-
-        const data = await response.json()
-        
-        if (!data?.data || !Array.isArray(data.data)) {
-          throw new Error('Invalid bioscan data structure')
-        }
-
-        setScanData(data.data)
-      } catch (err: unknown) {
-        console.error('Fetch error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load bioscan records');
-        
-        if (err instanceof Error && 'response' in err && (err as ErrorWithResponse).response?.status === 401) {
-          router.push('/login');
-        }
-      } finally {
-        setIsLoading(false)
-      }
+  const getBiomarkersFromCodigos = (codigos: Array<{ nombreCodigo: string; valor: number }>) => {
+    // Extract specific biomarkers from codigos array
+    return {
+      muscle_pain: Math.abs(codigos.find(c => c.nombreCodigo === 'Muscle/nerve tension')?.valor || 0),
+      energy_level: Math.abs(codigos.find(c => c.nombreCodigo === 'Fatigue')?.valor || 0),
+      inflammation: Math.abs(codigos.find(c => c.nombreCodigo === 'Inflammation')?.valor || 0)
     }
+  }
 
-    if (scans.length === 0) {
-      fetchBioScans()
-    } else {
+  const fetchBioScans = async (page: number = 1) => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        router.push('/login')
+        return
+      }
+
+      const response = await fetch(
+        `https://api.anywherehealing.com/api/doctor/patient/get-bioscan-record/${id}?page=${page}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) throw new Error('Failed to fetch bio scans')
+      
+      const data: ApiResponse = await response.json()
+      
+      if (data.success && data.data.data) {
+        const transformedScans = data.data.data.map(scan => ({
+          id: scan.id,
+          user_id: scan.user_id,
+          fecha: scan.fecha,
+          nombre: scan.nombre,
+          instrumento: scan.instrumento,
+          status: scan.status,
+          codigos: scan.codigos,
+          severity: getSeverityFromCodigos(scan.codigos),
+          biomarkers: getBiomarkersFromCodigos(scan.codigos),
+          created_at: scan.created_at,
+          updated_at: scan.updated_at
+        }))
+
+        setScanData(prev => page === 1 ? transformedScans : [...prev, ...transformedScans])
+        setHasMore(data.data.next_page_url !== null)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
       setIsLoading(false)
     }
-  }, [id, router, scans])
+  }
 
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-6">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-[200px] w-full rounded-lg" />
-        ))}
-      </div>
-    )
+  useEffect(() => {
+    fetchBioScans()
+  }, [id])
+
+  const handleLoadMore = () => {
+    const nextPage = currentPage + 1
+    setCurrentPage(nextPage)
+    fetchBioScans(nextPage)
+  }
+
+  if (isLoading && currentPage === 1) {
+    return <div className="text-center py-4">Loading bio scans...</div>
   }
 
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen space-y-4">
-        <AlertCircle className="w-12 h-12 text-red-500" />
-        <div className="text-xl font-medium text-red-600">{error}</div>
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Patient
-        </button>
-      </div>
-    )
+    return <div className="text-red-500 text-center py-4">Error: {error}</div>
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Bio Scan Records</h1>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Bio Scan Results</h1>
+      
+      {scanData.map((scan) => (
+        <div key={scan.id} className="mb-8 p-6 bg-white rounded-lg shadow-md">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">{scan.nombre}</h2>
+              <p className="text-gray-600 text-sm">
+                {new Date(scan.fecha).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+              <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm ${
+                scan.severity === 'High' ? 'bg-red-100 text-red-800' :
+                scan.severity === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-green-100 text-green-800'
+              }`}>
+                {scan.severity} Severity
+              </span>
+            </div>
+            <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+              {scan.instrumento}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <MeasurementScale
+              title="Muscle Pain"
+              value={scan.biomarkers.muscle_pain}
+              minLabel="No Pain"
+              maxLabel="Severe Pain"
+            />
+            <MeasurementScale
+              title="Energy Level"
+              value={scan.biomarkers.energy_level}
+              minLabel="Low Energy"
+              maxLabel="High Energy"
+            />
+            <MeasurementScale
+              title="Inflammation"
+              value={scan.biomarkers.inflammation}
+              minLabel="No Inflammation"
+              maxLabel="High Inflammation"
+            />
+          </div>
+
+          <div className="mt-6">
+            <h3 className="font-semibold mb-3">Detailed Biomarkers</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {scan.codigos.map((codigo, index) => (
+                <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700">{codigo.nombreCodigo}</p>
+                  <p className={`text-lg ${
+                    codigo.valor > 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {Math.abs(codigo.valor).toFixed(1)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {hasMore && (
         <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          onClick={handleLoadMore}
+          disabled={isLoading}
+          className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
         >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Patient
-       </button>
-      </div>
-
-      <ScrollArea className="h-[calc(100vh-160px)]">
-        <div className="space-y-6 pr-4">
-          {scanData.map((scan) => (
-            <div 
-              key={scan.id}
-              className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-medium">{scan.condition}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(scan.scan_date).toLocaleDateString()}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "px-3 py-1 rounded-full text-sm font-medium",
-                    scan.severity === "Low" && "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-                    scan.severity === "Moderate" && "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-                    scan.severity === "High" && "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                  )}
-                >
-                  {scan.severity}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <MeasurementScale 
-                  label="Muscle Pain" 
-                  value={scan.biomarkers.muscle_pain} 
-                />
-                <MeasurementScale 
-                  label="Energy Level" 
-                  value={scan.biomarkers.energy_level} 
-                />
-                <MeasurementScale 
-                  label="Inflammation" 
-                  value={scan.biomarkers.inflammation} 
-                />
-              </div>
-
-              {scan.notes && (
-                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Clinical Notes</h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {scan.notes}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {scanData.length === 0 && (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              No bio scan records available for this patient
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-    </div>
-  )
-}
-
-function MeasurementScale({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span className="text-gray-600 dark:text-gray-300">{label}</span>
-        <span className="font-medium">{value}/10</span>
-      </div>
-      <div className="relative pt-1">
-        <div className="flex h-2 overflow-hidden text-xs bg-gray-200 rounded dark:bg-gray-700">
-          <div
-            style={{ width: `${(value / 10) * 100}%` }}
-            className={cn(
-              "shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center",
-              value <= 3 ? "bg-green-500" :
-              value <= 6 ? "bg-yellow-500" :
-              "bg-red-500"
-            )}
-          />
-        </div>
-      </div>
+          {isLoading ? 'Loading More...' : 'Load More Results'}
+        </button>
+      )}
     </div>
   )
 }

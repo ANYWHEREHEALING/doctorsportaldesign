@@ -1,41 +1,20 @@
-// app/patient-list/[id]/page.tsx
-import { Suspense } from 'react';
-import { getPatientData, getBioScans, getPhysicalData } from './actions';
-import PatientDetailsContent from './patient-details-content';
-import { Skeleton } from "@/app/components/ui";
+"use client"
+import { Suspense } from 'react'
+import PatientDetailsContentWrapper from './patient-details-content'
+import PatientDetailsSkeleton from '../components/loading'
+import ErrorComponent from '../components/error'
+import { ErrorBoundary } from 'react-error-boundary'
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
-
-export default async function PatientDetailsPage({
+export default function PatientDetailsPage({
   params,
-}: PageProps) {
-  try {
-    // Fetch all data in parallel
-    const [patientData, bioScans, physicalData] = await Promise.all([
-      getPatientData(params.id),
-      getBioScans(params.id),
-      getPhysicalData(params.id)
-    ]);
-
-    return (
-      <Suspense fallback={<Skeleton className="h-screen w-full" />}>
-        <PatientDetailsContent
-          patientData={patientData}
-          bioScans={bioScans}
-          physicalData={physicalData}
-          id={params.id}
-        />
-      </Suspense>
-    );
-  } catch (error) {
-    console.error('Error loading patient details:', error);
-    return <div>Error loading patient details</div>;
-  }
+}: {
+  params: { id: string }
+}) {
+  return (
+    <Suspense fallback={<PatientDetailsSkeleton />}>
+      <ErrorBoundary fallback={<ErrorComponent />}>
+        <PatientDetailsContentWrapper id={params.id} />
+      </ErrorBoundary>
+    </Suspense>
+  )
 }
-
-export const dynamic = 'force-dynamic';

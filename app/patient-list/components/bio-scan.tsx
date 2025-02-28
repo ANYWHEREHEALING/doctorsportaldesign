@@ -123,17 +123,7 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Bio Scan Results</h1>
-        {scanData.length > 1 && (
-          <button
-            onClick={() => setShowAllScans(!showAllScans)}
-            className="text-blue-600 hover:text-blue-800 font-medium"
-          >
-            {showAllScans ? 'Earlier Scans' : 'Previous Scans'}
-          </button>
-        )}
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Bio Scan Results</h1>
       
       {displayedScans.map((scan) => (
         <div key={scan.id} className="mb-8 p-6 bg-white rounded-lg shadow-md">
@@ -201,6 +191,15 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
           </div>
         </div>
       ))}
+
+      {scanData.length > 1 && !showAllScans && (
+        <button
+          onClick={() => setShowAllScans(true)}
+          className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mb-4"
+        >
+          View Previous Scans
+        </button>
+      )}
 
       {showAllScans && hasMore && (
         <button

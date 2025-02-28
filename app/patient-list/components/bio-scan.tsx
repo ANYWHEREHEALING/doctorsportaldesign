@@ -33,6 +33,7 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [showAllScans, setShowAllScans] = useState(false)
 
   const getSeverityFromCodigos = (codigos: Array<{ valor: number }>): string => {
     const avgValue = codigos.reduce((sum, code) => sum + Math.abs(code.valor), 0) / codigos.length
@@ -118,11 +119,23 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
     return <div className="text-red-500 text-center py-4">Error: {error}</div>
   }
 
+  const displayedScans = showAllScans ? scanData : scanData.slice(0, 1)
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Bio Scan Results</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Bio Scan Results</h1>
+        {scanData.length > 1 && (
+          <button
+            onClick={() => setShowAllScans(!showAllScans)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            {showAllScans ? 'Earlier Scans' : 'Previous Scans'}
+          </button>
+        )}
+      </div>
       
-      {scanData.map((scan) => (
+      {displayedScans.map((scan) => (
         <div key={scan.id} className="mb-8 p-6 bg-white rounded-lg shadow-md">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -153,18 +166,21 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
               value={scan.biomarkers.muscle_pain}
               minLabel="No Pain"
               maxLabel="Severe Pain"
+              valueColor={scan.biomarkers.muscle_pain > 70 ? 'text-red-600' : 'text-green-600'}
             />
             <MeasurementScale
               title="Energy Level"
               value={scan.biomarkers.energy_level}
               minLabel="Low Energy"
               maxLabel="High Energy"
+              valueColor={scan.biomarkers.energy_level > 70 ? 'text-red-600' : 'text-green-600'}
             />
             <MeasurementScale
               title="Inflammation"
               value={scan.biomarkers.inflammation}
               minLabel="No Inflammation"
               maxLabel="High Inflammation"
+              valueColor={scan.biomarkers.inflammation > 70 ? 'text-red-600' : 'text-green-600'}
             />
           </div>
 
@@ -175,7 +191,7 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
                 <div key={index} className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-sm font-medium text-gray-700">{codigo.nombreCodigo}</p>
                   <p className={`text-lg ${
-                    codigo.valor > 0 ? 'text-green-600' : 'text-red-600'
+                    Math.abs(codigo.valor) > 70 ? 'text-red-600' : 'text-green-600'
                   }`}>
                     {Math.abs(codigo.valor).toFixed(1)}
                   </p>
@@ -186,7 +202,7 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
         </div>
       ))}
 
-      {hasMore && (
+      {showAllScans && hasMore && (
         <button
           onClick={handleLoadMore}
           disabled={isLoading}

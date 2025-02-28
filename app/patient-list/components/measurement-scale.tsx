@@ -6,6 +6,7 @@ interface MeasurementScaleProps {
     value: number
     minLabel: string
     maxLabel: string
+    valueColor?: string;
   }
   
   export default function MeasurementScale({ 

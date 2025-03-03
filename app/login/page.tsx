@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button, Input,  Switch } from "@/app/components/ui"
 import { Moon, Sun } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 
 export default function LoginPage() {
   const [darkMode, setDarkMode] = useState(false)
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -25,6 +27,8 @@ export default function LoginPage() {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsLoading(true)
+    setError("")
     
     try {
       const formData = new FormData()
@@ -47,24 +51,18 @@ export default function LoginPage() {
         throw new Error(data.message || "Login failed")
       }
   
-     
       if (!data?.access_token || !data?.doctor) {
         console.error('API response:', data)
         throw new Error("Invalid authentication response format - missing access_token or doctor data")
       }
-  
 
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('doctor', JSON.stringify(data.doctor))
-
-      // In your login handler after successful authentication:
-
-      const headers = new Headers()
-      headers.append('Authorization', `Bearer ${data.access_token}`)
       
       router.push("/patient-list")
     } catch (err) {
       setError((err as Error).message || "An error occurred during login")
+      setIsLoading(false)
     }
   }
 
@@ -98,7 +96,19 @@ export default function LoginPage() {
           <div className="space-y-6">
             <h1 className="text-2xl font-medium text-center mb-8 dark:text-white">Login</h1>
 
-            {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+            {error && (
+              <div className="max-w-2xl mx-auto p-6 bg-red-50 rounded-lg">
+                <div className="text-red-600 font-medium mb-4">
+                  Error loading patients: {error}
+                </div>
+                <button
+                  onClick={handleSubmit}
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
 
             <div className="space-y-4">
               <Input
@@ -129,7 +139,11 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full h-12 bg-[#8BA872] hover:bg-[#7A946A] text-white rounded-lg">
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-[#8BA872] hover:bg-[#7A946A] text-white rounded-lg"
+              disabled={isLoading}
+            >
               Login
             </Button>
 
@@ -153,6 +167,40 @@ export default function LoginPage() {
           <Moon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
         </div>
       </div>
+
+      {isLoading && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg flex items-center justify-center z-50"
+        >
+          <div className="relative w-48 h-48">
+            <motion.div
+              className="relative w-full h-full"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            >
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#8BA872] border-r-[#8BA872] dark:border-t-[#7A946A] dark:border-r-[#7A946A] bg-gradient-to-tr from-transparent via-white/10 to-transparent">
+                <div className="absolute inset-2 flex items-center justify-center">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="relative w-16 h-8"
+                  >
+                    <Image
+                      src="/Group.png"
+                      alt="Loading"
+                      fill
+                      className="object-contain opacity-80"
+                    />
+                  </motion.div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }

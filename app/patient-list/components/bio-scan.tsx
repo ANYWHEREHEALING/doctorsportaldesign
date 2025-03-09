@@ -228,21 +228,7 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
             />
           </div>
 
-          <div className="mt-6">
-            <h3 className="font-semibold mb-3">Detailed Biomarkers</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {scan.codigos.map((codigo, index) => (
-                <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700">{codigo.nombreCodigo}</p>
-                  <p className={`text-lg ${
-                    Math.abs(codigo.valor) > 70 ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {Math.abs(codigo.valor).toFixed(1)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          
         </div>
       ))}
 

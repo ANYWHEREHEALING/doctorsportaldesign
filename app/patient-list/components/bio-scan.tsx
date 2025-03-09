@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BioScanData } from '../types/patient'
 import MeasurementScale from './measurement-scale'
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface BioScanWithMetrics extends BioScanData {
   severity: string
@@ -111,6 +113,50 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
     fetchBioScans(nextPage)
   }
 
+  const handleDownloadPDF = (scan: BioScanWithMetrics) => {
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(18);
+    doc.text(`Bio Scan Report - ${scan.nombre}`, 14, 20);
+    
+    // Add basic info
+    doc.setFontSize(12);
+    doc.text(`Date: ${new Date(scan.fecha).toLocaleDateString()}`, 14, 30);
+    doc.text(`Instrument: ${scan.instrumento}`, 14, 35);
+    doc.text(`Severity: ${scan.severity}`, 14, 40);
+    
+    // Add biomarker table
+    const biomarkerData = [
+      ['Muscle Pain', scan.biomarkers.muscle_pain],
+      ['Energy Level', scan.biomarkers.energy_level],
+      ['Inflammation', scan.biomarkers.inflammation]
+    ];
+    
+    autoTable(doc, {
+      startY: 50,
+      head: [['Biomarker', 'Value']],
+      body: biomarkerData,
+      theme: 'striped'
+    });
+    
+    // Add detailed biomarkers
+    const detailedBiomarkers = scan.codigos.map(codigo => [
+      codigo.nombreCodigo,
+      Math.abs(codigo.valor).toFixed(1)
+    ]);
+    
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 10,
+      head: [['Biomarker', 'Value']],
+      body: detailedBiomarkers,
+      theme: 'striped'
+    });
+    
+    // Save the PDF
+    doc.save(`bio-scan-${scan.id}.pdf`);
+  };
+
   if (isLoading && currentPage === 1) {
     return <div className="text-center py-4">Loading bio scans...</div>
   }
@@ -145,9 +191,17 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
                 {scan.severity} Severity
               </span>
             </div>
-            <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
-              {scan.instrumento}
-            </span>
+            <div className="flex flex-col items-end">
+              <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full mb-2">
+                {scan.instrumento}
+              </span>
+              <button 
+                onClick={() => handleDownloadPDF(scan)}
+                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full text-sm"
+              >
+                Download PDF
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

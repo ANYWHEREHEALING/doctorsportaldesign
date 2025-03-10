@@ -143,14 +143,22 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
     // Add detailed biomarkers
     const detailedBiomarkers = scan.codigos.map(codigo => [
       codigo.nombreCodigo,
-      Math.abs(codigo.valor).toFixed(1)
+      Math.abs(codigo.valor).toFixed(1),
+      Math.abs(codigo.valor) > 70 ? 'High' : 'Normal'
     ]);
     
     autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 10,
-      head: [['Biomarker', 'Value']],
+      startY: (doc as any).lastAutoTable.finalY + 15,
+      head: [['Biomarker', 'Value', 'Status']],
       body: detailedBiomarkers,
-      theme: 'striped'
+      theme: 'striped',
+      didDrawCell: (data: { column: { index: number }, cell: { raw: string } }) => {
+        if (data.column.index === 2 && data.cell.raw === 'High') {
+          doc.setTextColor(255, 0, 0);
+        } else {
+          doc.setTextColor(0, 0, 0);
+        }
+      }
     });
     
     // Save the PDF
@@ -227,8 +235,22 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
               valueColor={scan.biomarkers.inflammation > 70 ? 'text-red-600' : 'text-green-600'}
             />
           </div>
-
-          
+          {/* Detailed Biomarkers 
+          {<div className="mt-6">
+            <h3 className="font-semibold mb-3">Detailed Biomarkers</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {scan.codigos.map((codigo, index) => (
+                <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700">{codigo.nombreCodigo}</p>
+                  <p className={`text-lg ${
+                    Math.abs(codigo.valor) > 70 ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {Math.abs(codigo.valor).toFixed(1)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>*/}
         </div>
       ))}
 

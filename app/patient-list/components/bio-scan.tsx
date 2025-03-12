@@ -116,9 +116,9 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
     const autoTable = require("jspdf-autotable").default;
     const doc = new jsPDF();
 
-    // Filter codigos with absolute value > 70
+    // Updated filter to > 80
     const pdfData = scan.codigos
-      .filter(codigo => Math.abs(codigo.valor) > 70)
+      .filter(codigo => Math.abs(codigo.valor) > 80)
       .map(codigo => [
         codigo.nombreCodigo,
         `${Math.abs(codigo.valor).toFixed(0)}%`,
@@ -150,10 +150,10 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
 
   const displayedScans = showAllScans 
     ? scanData.filter(scan => 
-        scan.codigos.some(codigo => Math.abs(codigo.valor) > 70)
+        scan.codigos.some(codigo => Math.abs(codigo.valor) > 80)
       )
     : scanData.filter(scan => 
-        scan.codigos.some(codigo => Math.abs(codigo.valor) > 70)
+        scan.codigos.some(codigo => Math.abs(codigo.valor) > 80)
       ).slice(0, 1)
 
   return (

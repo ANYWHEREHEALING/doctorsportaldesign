@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BioScanData } from '../types/patient'
 import MeasurementScale from './measurement-scale'
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 export interface BioScanWithMetrics extends BioScanData {
   severity: string
@@ -114,55 +112,32 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
   }
 
   const handleDownloadPDF = (scan: BioScanWithMetrics) => {
+    const { jsPDF } = require("jspdf");
+    const autoTable = require("jspdf-autotable").default;
     const doc = new jsPDF();
+
+    // Filter codigos with absolute value > 70
+    const pdfData = scan.codigos
+      .filter(codigo => Math.abs(codigo.valor) > 70)
+      .map(codigo => [
+        codigo.nombreCodigo,
+        `${Math.abs(codigo.valor).toFixed(0)}%`,
+        codigo.nombreCategoria
+      ]);
+
+    doc.text(`BioScan Report - ${scan.fecha}`, 10, 10);
     
-    // Add title
-    doc.setFontSize(18);
-    doc.text(`Bio Scan Report - ${scan.nombre}`, 14, 20);
-    
-    // Add basic info
-    doc.setFontSize(12);
-    doc.text(`Date: ${new Date(scan.fecha).toLocaleDateString()}`, 14, 30);
-    doc.text(`Instrument: ${scan.instrumento}`, 14, 35);
-    doc.text(`Severity: ${scan.severity}`, 14, 40);
-    
-    // Add biomarker table
-    const biomarkerData = [
-      ['Muscle Pain', scan.biomarkers.muscle_pain],
-      ['Energy Level', scan.biomarkers.energy_level],
-      ['Inflammation', scan.biomarkers.inflammation]
-    ];
-    
+    // Use the autoTable function directly
     autoTable(doc, {
-      startY: 50,
-      head: [['Biomarker', 'Value']],
-      body: biomarkerData,
-      theme: 'striped'
+      head: [['Biomarker', 'Value', 'Category']],
+      body: pdfData,
+      startY: 20,
+      theme: 'grid',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [41, 128, 185] }
     });
-    
-    // Add detailed biomarkers
-    const detailedBiomarkers = scan.codigos.map(codigo => [
-      codigo.nombreCodigo,
-      Math.abs(codigo.valor).toFixed(1),
-      Math.abs(codigo.valor) > 70 ? 'High' : 'Normal'
-    ]);
-    
-    autoTable(doc, {
-      startY: (doc as any).lastAutoTable.finalY + 15,
-      head: [['Biomarker', 'Value', 'Status']],
-      body: detailedBiomarkers,
-      theme: 'striped',
-      didDrawCell: (data: { column: { index: number }, cell: { raw: string } }) => {
-        if (data.column.index === 2 && data.cell.raw === 'High') {
-          doc.setTextColor(255, 0, 0);
-        } else {
-          doc.setTextColor(0, 0, 0);
-        }
-      }
-    });
-    
-    // Save the PDF
-    doc.save(`bio-scan-${scan.id}.pdf`);
+
+    doc.save(`bioscan-${scan.fecha}.pdf`);
   };
 
   if (isLoading && currentPage === 1) {
@@ -173,7 +148,13 @@ export default function BioScanPage({ scans, id }: { scans: BioScanWithMetrics[]
     return <div className="text-red-500 text-center py-4">Error: {error}</div>
   }
 
-  const displayedScans = showAllScans ? scanData : scanData.slice(0, 1)
+  const displayedScans = showAllScans 
+    ? scanData.filter(scan => 
+        scan.codigos.some(codigo => Math.abs(codigo.valor) > 70)
+      )
+    : scanData.filter(scan => 
+        scan.codigos.some(codigo => Math.abs(codigo.valor) > 70)
+      ).slice(0, 1)
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

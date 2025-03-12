@@ -169,15 +169,15 @@ export default function DashboardPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                      <button
-                        className="text-blue-600 hover:text-blue-800"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/patient-list/${patient.id}`);
-                        }}
-                      >
-                        View Details
-                      </button>
+                        <button
+                          className="text-blue-600 hover:text-blue-800"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/patient-list/${patient.id}`);
+                          }}
+                        >
+                          View Details
+                        </button>
                       </TableCell>
                     </TableRow>
                   ))}

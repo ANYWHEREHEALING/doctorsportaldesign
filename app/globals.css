@@ -2,8 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colours used by the shared ui.tsx components */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 100 10% 12%;
+  --border: 96 15% 86%;
+  --input: 96 15% 86%;
+  --ring: 92 24% 55%;
+  --primary: 92 24% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 96 20% 95%;
+  --secondary-foreground: 100 10% 12%;
+  --muted: 96 20% 95%;
+  --muted-foreground: 100 6% 45%;
+  --accent: 96 20% 95%;
+  --accent-foreground: 100 10% 12%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 100 10% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 100 10% 12%;
+  --radius: 0.75rem;
+}
 
-* {
-    transition: none !important;
-    animation: none !important;
-  }
+body {
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Reports: "Download PDF" prints only the report */
+@media print {
+  @page { size: A4; margin: 14mm; }
+  html, body { background: #fff !important; }
+  .no-print { display: none !important; }
+  main { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  .break-inside-avoid { break-inside: avoid; }
+  .dark * { color: #111 !important; }
+}

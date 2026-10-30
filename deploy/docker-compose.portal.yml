@@ -1,0 +1,20 @@
+# Practitioner portal next to the existing API containers.
+# Joins the API's Docker network so it can reach it as http://api:5800.
+# Check the network name with:  docker network ls   (look for ..._default)
+services:
+  portal:
+    build:
+      context: ..
+      args:
+        API_INTERNAL_URL: http://api:5800
+    container_name: anywhereheal-portal
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3100"   # only reachable through the web server (HTTPS)
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: anywherehealing-backend_default

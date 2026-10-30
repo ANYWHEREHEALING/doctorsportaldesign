@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Anywhere Healing · Practitioner portal
 
-## Getting Started
+Web dashboard for practitioners. Patients share their Charisma Ring data
+(sleep, heart rate, HRV, stress, sessions) from the app, and the practitioner
+sees daily charts plus weekly and monthly reports.
 
-First, run the development server:
+## How it fits together
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+browser ──> doctors.anywherehealing.com (this app, port 3100)
+                 └── /api/portal/*  ──(forwarded)──> API server (NewBackend, port 5800)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- The browser only talks to this site. `next.config.js` forwards `/api/portal/*`
+  to the API, so the sign-in cookie is first-party and `httpOnly`. Page scripts
+  never see a token.
+- All data and rules live in the API (`portalController.js`). This app only displays.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Path | What |
+|---|---|
+| `/` | Sign in |
+| `/accept-invite?token=…` | From the invitation email: set name and password |
+| `/forgot-password`, `/reset-password?token=…` | Password reset |
+| `/patients` | Patients sharing with you, plus invitations; "Invite patient" |
+| `/patients/:id` | Overview, Sleep, Heart rate, HRV, Stress, Sessions, Reports |
+| `/patients/:id/report?type=weekly\|monthly&period=…` | Printable report; "Download PDF" |
 
-## Learn More
+## Run locally
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm install
+API_INTERNAL_URL=http://localhost:5800 npm run dev   # http://localhost:3100
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+For local http, set `PORTAL_INSECURE_COOKIE=true` and `PORTAL_URL=http://localhost:3100`
+on the API, otherwise the browser drops the secure cookie.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploy (VPS, Docker)
 
-## Deploy on Vercel
+See `deploy/README.md` in the delivery, or:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+docker build --build-arg API_INTERNAL_URL=http://api:5800 -t anywhereheal-portal .
+```

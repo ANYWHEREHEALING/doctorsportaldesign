@@ -1,21 +1,16 @@
-import "./globals.css";
+import type { Metadata } from "next"
+import "./globals.css"
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export const metadata: Metadata = {
+  title: "Anywhere Healing · Practitioner portal",
+  description: "Follow the sleep, heart rate, HRV and stress your clients share from their Charisma Ring.",
+  robots: { index: false, follow: false },
+}
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-sans">
-        {children}
-      </body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-sans antialiased">{children}</body>
     </html>
-  );
+  )
 }

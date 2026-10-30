@@ -5,26 +5,29 @@
 import Image from "next/image"
 import { Moon, Sun } from "lucide-react"
 import { useDarkMode } from "./shell"
+import { LanguageSwitch, useI18n } from "@/app/libs/i18n"
 
 export function AuthCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   const [dark, setDark] = useDarkMode()
+  const { t } = useI18n()
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F4F7F1] dark:bg-gray-900 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-[#D1D9CB] dark:border-gray-700 p-8 shadow-sm">
           <div className="flex flex-col items-center mb-6">
             <Image src="/Group.png" alt="Anywhere Healing" width={52} height={52} priority />
-            <div className="text-xs text-gray-500 mt-2">Practitioner portal</div>
+            <div className="text-xs text-gray-500 mt-2">{t("Practitioner portal")}</div>
           </div>
           <h1 className="text-2xl font-medium text-center dark:text-white">{title}</h1>
           {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">{subtitle}</p>}
           <div className="mt-6">{children}</div>
         </div>
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center items-center gap-3 mt-6">
+          <LanguageSwitch />
           <button
             onClick={() => setDark(!dark)}
             className="p-2 rounded-lg text-gray-500 hover:bg-white/60 dark:hover:bg-gray-800"
-            aria-label={dark ? "Light mode" : "Dark mode"}
+            aria-label={dark ? t("Light mode") : t("Dark mode")}
           >
             {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
@@ -47,13 +50,14 @@ export function Field({ label, ...props }: { label: string } & React.InputHTMLAt
 }
 
 export function SubmitButton({ busy, children }: { busy?: boolean; children: React.ReactNode }) {
+  const { t } = useI18n()
   return (
     <button
       type="submit"
       disabled={busy}
       className="w-full h-12 rounded-lg bg-[#8BA872] hover:bg-[#7A946A] text-white font-medium disabled:opacity-60"
     >
-      {busy ? "Please wait…" : children}
+      {busy ? t("Please wait…") : children}
     </button>
   )
 }

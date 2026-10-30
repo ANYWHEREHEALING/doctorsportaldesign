@@ -10,8 +10,46 @@ export interface Doctor {
   name: string
   clinic: string
   status: string
+  language: "en" | "es"
   lastLoginAt: string | null
 }
+
+export interface Flag {
+  code: string
+  level: "high" | "medium" | "low"
+  text: string
+  params?: { days?: number; minutes?: number; pct?: number; done?: number; target?: number }
+}
+
+export interface PlanWeek { week: number; start: string; done: number; target: number; met: boolean }
+
+export interface PlanProgress {
+  weeks: PlanWeek[]
+  currentWeek: number
+  thisWeek: PlanWeek
+  daysLeftThisWeek: number
+  totalDone: number
+  totalTarget: number
+  endDate: string
+  ended: boolean
+}
+
+export interface Recommendation {
+  id: number
+  type: "plan" | "note"
+  message: string
+  kind: string | null
+  kindTitle: string | null
+  sessionsPerWeek: number | null
+  weeks: number | null
+  startDate: string | null
+  status: "active" | "ended" | "cancelled"
+  seenAt: string | null
+  createdAt: string
+  progress: PlanProgress | null
+}
+
+export interface Note { id: number; date: string; text: string; createdAt: string }
 
 export interface PatientRow {
   linkId: number
@@ -30,6 +68,8 @@ export interface PatientRow {
   hrv7d?: number | null
   stress7d?: number | null
   stressChange?: number | null
+  flags: Flag[]
+  plan?: { kindTitle: string; thisWeek: PlanWeek; currentWeek: number; weeks: number } | null
 }
 
 export interface DayRow {
@@ -119,6 +159,7 @@ export interface ResponseBlock {
 
 export interface PatientDetail {
   patient: PatientProfile
+  flags: Flag[]
   range: { from: string; to: string; days: number }
   summary: Summary
   days: DayRow[]
@@ -199,9 +240,10 @@ export const api = {
   login: (email: string, password: string) => request<{ doctor: Doctor }>("POST", "/auth/login", { email, password }),
   logout: () => request<object>("POST", "/auth/logout"),
   inviteInfo: (token: string) =>
-    request<{ email: string; name: string; clinic: string }>("GET", `/auth/invite?token=${encodeURIComponent(token)}`),
-  acceptInvite: (token: string, name: string, clinic: string, password: string) =>
-    request<{ doctor: Doctor }>("POST", "/auth/accept-invite", { token, name, clinic, password }),
+    request<{ email: string; name: string; clinic: string; language?: "en" | "es" }>("GET", `/auth/invite?token=${encodeURIComponent(token)}`),
+  setLanguage: (language: "en" | "es") => request<{ doctor: Doctor }>("PUT", "/auth/language", { language }),
+  acceptInvite: (token: string, name: string, clinic: string, password: string, language: "en" | "es") =>
+    request<{ doctor: Doctor }>("POST", "/auth/accept-invite", { token, name, clinic, password, language }),
   forgot: (email: string) => request<object>("POST", "/auth/forgot", { email }),
   reset: (token: string, password: string) => request<{ doctor: Doctor }>("POST", "/auth/reset", { token, password }),
 
@@ -215,4 +257,18 @@ export const api = {
     request<WeeklyReport>("GET", `/patients/${userId}/reports/weekly${week ? `?week=${week}` : ""}`),
   monthlyReport: (userId: string | number, month?: string) =>
     request<MonthlyReport>("GET", `/patients/${userId}/reports/monthly${month ? `?month=${month}` : ""}`),
+
+  // care
+  notes: (userId: string | number) => request<{ notes: Note[] }>("GET", `/patients/${userId}/notes`),
+  addNote: (userId: string | number, text: string, date?: string) =>
+    request<{ note: Note }>("POST", `/patients/${userId}/notes`, { text, date }),
+  deleteNote: (userId: string | number, noteId: number) => request<object>("DELETE", `/patients/${userId}/notes/${noteId}`),
+  recommendations: (userId: string | number) =>
+    request<{ recommendations: Recommendation[]; canSeeProgress: boolean }>("GET", `/patients/${userId}/recommendations`),
+  recommendPlan: (userId: string | number, kind: string, sessionsPerWeek: number, weeks: number, message: string) =>
+    request<{ recommendation: Recommendation }>("POST", `/patients/${userId}/recommendations`, { type: "plan", kind, sessionsPerWeek, weeks, message }),
+  recommendNote: (userId: string | number, message: string) =>
+    request<{ recommendation: Recommendation }>("POST", `/patients/${userId}/recommendations`, { type: "note", message }),
+  withdrawRecommendation: (userId: string | number, recId: number) =>
+    request<object>("DELETE", `/patients/${userId}/recommendations/${recId}`),
 }

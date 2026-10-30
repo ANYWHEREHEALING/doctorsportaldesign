@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { LogOut, Moon, Sun, Users } from "lucide-react"
 import { api, Doctor } from "@/app/libs/api"
 import { cn } from "@/app/libs/utils"
+import { LanguageSwitch, storedLanguage, useI18n } from "@/app/libs/i18n"
 
 const DoctorContext = createContext<Doctor | null>(null)
 export const useDoctor = () => useContext(DoctorContext)
@@ -35,10 +36,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [signingOut, setSigningOut] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
+  const { t, setLang } = useI18n()
 
   useEffect(() => {
-    api.me().then((r) => setDoctor(r.doctor)).catch(() => { /* 401 → redirected by api */ })
-  }, [])
+    api.me().then((r) => {
+      setDoctor(r.doctor)
+      // The account's language wins, unless this browser picked one
+      // (e.g. on the sign-in page): then save that on the account.
+      const local = storedLanguage()
+      if (local && local !== r.doctor.language) api.setLanguage(local).catch(() => {})
+      else if (!local && r.doctor.language) setLang(r.doctor.language, false)
+    }).catch(() => { /* 401 → redirected by api */ })
+  }, [setLang])
+
+  const saveLanguage = (l: "en" | "es") => { api.setLanguage(l).catch(() => {}) }
 
   const signOut = async () => {
     setSigningOut(true)
@@ -49,12 +60,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
   if (!doctor) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F7F1] dark:bg-gray-900">
-        <div className="h-10 w-10 rounded-full border-4 border-[#D1D9CB] border-t-[#8BA872] animate-spin" aria-label="Loading" />
+        <div className="h-10 w-10 rounded-full border-4 border-[#D1D9CB] border-t-[#8BA872] animate-spin" aria-label={t("Loading")} />
       </div>
     )
   }
 
-  const nav = [{ href: "/patients", label: "Patients", icon: Users }]
+  const nav = [{ href: "/patients", label: t("Patients"), icon: Users }]
 
   return (
     <DoctorContext.Provider value={doctor}>
@@ -64,7 +75,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Image src="/Group.png" alt="" width={30} height={30} />
             <div className="leading-tight">
               <div className="font-semibold text-sm">Anywhere Healing</div>
-              <div className="text-[11px] text-gray-500">Practitioner portal</div>
+              <div className="text-[11px] text-gray-500">{t("Practitioner portal")}</div>
             </div>
           </div>
           <nav className="flex-1 p-3 space-y-1">
@@ -88,11 +99,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <div className="font-medium truncate">{doctor.name || doctor.email}</div>
               {doctor.clinic && <div className="text-xs text-gray-500 truncate">{doctor.clinic}</div>}
             </div>
+            <LanguageSwitch onChange={saveLanguage} />
             <div className="flex items-center justify-between">
               <button
                 onClick={() => setDark(!dark)}
                 className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-                aria-label={dark ? "Light mode" : "Dark mode"}
+                aria-label={dark ? t("Light mode") : t("Dark mode")}
               >
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
@@ -101,7 +113,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 disabled={signingOut}
                 className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-red-600 disabled:opacity-50"
               >
-                <LogOut className="h-4 w-4" /> Sign out
+                <LogOut className="h-4 w-4" /> {t("Sign out")}
               </button>
             </div>
           </div>
@@ -110,9 +122,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {/* Small screens: top bar instead of the sidebar */}
         <header className="no-print md:hidden flex items-center justify-between px-4 h-14 bg-white dark:bg-gray-800 border-b border-[#D1D9CB] dark:border-gray-700">
           <Link href="/patients" className="flex items-center gap-2 font-semibold text-sm">
-            <Image src="/Group.png" alt="" width={24} height={24} /> Patients
+            <Image src="/Group.png" alt="" width={24} height={24} /> {t("Patients")}
           </Link>
-          <button onClick={signOut} className="text-sm text-gray-600 dark:text-gray-300">Sign out</button>
+          <div className="flex items-center gap-3">
+            <LanguageSwitch onChange={saveLanguage} />
+            <button onClick={signOut} className="text-sm text-gray-600 dark:text-gray-300">{t("Sign out")}</button>
+          </div>
         </header>
 
         <main className="md:ml-60 px-4 md:px-8 py-6 max-w-[1200px]">{children}</main>
@@ -121,16 +136,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
   )
 }
 
+/** Titles/subtitles are passed in English and translated here. */
 export function Card({ title, subtitle, action, children, className }: {
   title?: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode; className?: string
 }) {
+  const { t } = useI18n()
   return (
     <section className={cn("bg-white dark:bg-gray-800 rounded-2xl border border-[#E3E9DE] dark:border-gray-700 p-5", className)}>
       {(title || action) && (
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            {title && <h2 className="font-semibold">{title}</h2>}
-            {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+            {title && <h2 className="font-semibold">{t(title)}</h2>}
+            {subtitle && <p className="text-xs text-gray-500 mt-0.5">{t(subtitle)}</p>}
           </div>
           {action}
         </div>

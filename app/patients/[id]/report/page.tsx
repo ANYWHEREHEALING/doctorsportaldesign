@@ -9,7 +9,8 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { ChevronLeft, ChevronRight, Download } from "lucide-react"
 import { api, MonthlyReport, Summary, WeeklyReport } from "@/app/libs/api"
-import { addDays, addMonths, minutesText, monthName, num, shortDay, signed } from "@/app/libs/format"
+import { addDays, addMonths, dateText, KIND_TITLES, METRIC_TITLES, minutesText, monthName, num, shortDay, signed } from "@/app/libs/format"
+import { useI18n } from "@/app/libs/i18n"
 import { LineChart, StackedBars } from "@/app/components/charts"
 import { useDoctor } from "@/app/components/shell"
 import { cn } from "@/app/libs/utils"
@@ -23,6 +24,7 @@ function ReportView({ userId }: { userId: string }) {
   const [report, setReport] = useState<Report | null>(null)
   const [error, setError] = useState("")
   const doctor = useDoctor()
+  const { t } = useI18n()
 
   useEffect(() => {
     let cancelled = false
@@ -35,11 +37,13 @@ function ReportView({ userId }: { userId: string }) {
     return () => { cancelled = true }
   }, [userId, type, period])
 
-  if (error) return <div role="alert" className="rounded-xl bg-red-50 text-red-700 px-5 py-4">{error}</div>
+  if (error) return <div role="alert" className="rounded-xl bg-red-50 text-red-700 px-5 py-4">{t(error)}</div>
   if (!report) return <div className="h-96 rounded-2xl bg-white dark:bg-gray-800 animate-pulse" />
 
   const isMonth = report.kind === "monthly"
-  const title = isMonth ? `Monthly report · ${monthName((report as MonthlyReport).month)}` : `Weekly report · ${shortDay((report as WeeklyReport).weekStart)} – ${shortDay(addDays((report as WeeklyReport).weekEnd, -1))}`
+  const title = isMonth
+    ? `${t("Monthly report")} · ${monthName((report as MonthlyReport).month)}`
+    : `${t("Weekly report")} · ${shortDay((report as WeeklyReport).weekStart)} – ${shortDay(addDays((report as WeeklyReport).weekEnd, -1))}`
   const current = isMonth ? (report as MonthlyReport).month : (report as WeeklyReport).weekStart
   const prev = isMonth ? addMonths(current, -1) : addDays(current, -7)
   const next = isMonth ? addMonths(current, 1) : addDays(current, 7)
@@ -53,14 +57,14 @@ function ReportView({ userId }: { userId: string }) {
       <div className="no-print flex flex-wrap items-center justify-between gap-3">
         <Link href={`/patients/${userId}`} className="text-sm text-gray-500 hover:text-gray-800">← {p.name}</Link>
         <div className="flex items-center gap-2">
-          <button onClick={() => setPeriod(prev)} className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-[#D1D9CB] bg-white dark:bg-gray-800" aria-label="Previous">
+          <button onClick={() => setPeriod(prev)} className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-[#D1D9CB] bg-white dark:bg-gray-800" aria-label={t("Previous")}>
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <button onClick={() => setPeriod(next)} disabled={nextDisabled} className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-[#D1D9CB] bg-white dark:bg-gray-800 disabled:opacity-40" aria-label="Next">
+          <button onClick={() => setPeriod(next)} disabled={nextDisabled} className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-[#D1D9CB] bg-white dark:bg-gray-800 disabled:opacity-40" aria-label={t("Next")}>
             <ChevronRight className="h-4 w-4" />
           </button>
           <button onClick={() => window.print()} className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[#8BA872] hover:bg-[#7A946A] text-white text-sm font-medium">
-            <Download className="h-4 w-4" /> Download PDF
+            <Download className="h-4 w-4" /> {t("Download PDF")}
           </button>
         </div>
       </div>
@@ -71,21 +75,21 @@ function ReportView({ userId }: { userId: string }) {
             <div className="text-xs uppercase tracking-wider text-[#5F7D48] font-semibold">Anywhere Healing</div>
             <h1 className="text-2xl font-semibold mt-1">{title}</h1>
             <p className="text-sm text-gray-600 mt-1">
-              {p.name}{p.age !== null ? ` · ${p.age} years` : ""}{p.gender ? ` · ${p.gender}` : ""}
+              {p.name}{p.age !== null ? ` · ${t("{n} years", { n: p.age })}` : ""}{p.gender ? ` · ${t(p.gender)}` : ""}
             </p>
-            {isMonth && !(report as MonthlyReport).complete && <p className="text-xs text-amber-700 mt-1">Month in progress: data so far.</p>}
+            {isMonth && !(report as MonthlyReport).complete && <p className="text-xs text-amber-700 mt-1">{t("Month in progress: data so far.")}</p>}
           </div>
           <div className="text-right text-xs text-gray-500 shrink-0">
             <Image src="/Group.png" alt="" width={40} height={40} className="ml-auto mb-2" />
-            Prepared for {doctor?.name || "your practitioner"}<br />
-            {new Date().toLocaleDateString()}
+            {t("Prepared for {name}", { name: doctor?.name || t("your practitioner") })}<br />
+            {dateText(new Date().toISOString())}
           </div>
         </header>
 
         <section>
-          <h2 className="font-semibold mb-3">Summary</h2>
+          <h2 className="font-semibold mb-3">{t("Summary")}</h2>
           <SummaryTable summary={s} isMonth={isMonth} />
-          <p className="text-xs text-gray-500 mt-2">Ring worn {s.daysWorn} of {report.days.length} days. Averages of the days with readings.</p>
+          <p className="text-xs text-gray-500 mt-2">{t("Ring worn {n} of {total} days. Averages of the days with readings.", { n: s.daysWorn, total: report.days.length })}</p>
         </section>
 
         <div className="grid md:grid-cols-2 print:grid-cols-2 gap-6">
@@ -124,20 +128,20 @@ function ReportView({ userId }: { userId: string }) {
 
         {report.sessionsByKind && (
           <section>
-            <h2 className="font-semibold mb-3">Wellness sessions</h2>
-            {report.sessionsByKind.length === 0 ? <p className="text-sm text-gray-500">No completed sessions in this period.</p> : (
+            <h2 className="font-semibold mb-3">{t("Wellness sessions")}</h2>
+            {report.sessionsByKind.length === 0 ? <p className="text-sm text-gray-500">{t("No completed sessions in this period.")}</p> : (
               <table className="w-full text-sm tabular-nums">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-[#E3E9DE]">
-                    <th className="py-2 font-medium">Session</th><th className="py-2 font-medium">Completed</th><th className="py-2 font-medium">Stress change (median, before → after)</th>
+                    <th className="py-2 font-medium">{t("Session")}</th><th className="py-2 font-medium">{t("Completed")}</th><th className="py-2 font-medium">{t("Stress change (median, before → after)")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.sessionsByKind.map((k) => (
                     <tr key={k.kind} className="border-b last:border-0 border-[#EEF2EA]">
-                      <td className="py-2">{k.title}</td>
+                      <td className="py-2">{t(KIND_TITLES[k.kind] || k.title)}</td>
                       <td className="py-2">{k.sessions}</td>
-                      <td className="py-2">{k.medianStressDrop === null ? "No check-ins" : k.medianStressDrop > 0 ? `${Math.round(k.medianStressDrop)} points lower after` : k.medianStressDrop < 0 ? `${Math.round(-k.medianStressDrop)} points higher after` : "No change"}</td>
+                      <td className="py-2">{k.medianStressDrop === null ? t("No check-ins") : k.medianStressDrop > 0 ? t("{n} points lower after", { n: Math.round(k.medianStressDrop) }) : k.medianStressDrop < 0 ? t("{n} points higher after", { n: Math.round(-k.medianStressDrop) }) : t("No change")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -148,26 +152,26 @@ function ReportView({ userId }: { userId: string }) {
 
         {report.response?.comparison && report.response.comparison.metrics.length > 0 && (
           <section>
-            <h2 className="font-semibold mb-1">Session days vs off days</h2>
+            <h2 className="font-semibold mb-1">{t("Session days vs off days")}</h2>
             <p className="text-xs text-gray-500 mb-3">
-              Last {report.response.comparison.windowDays} days up to the end of this period · {report.response.comparison.sessionDays} session days, {report.response.comparison.offDays} off days.
+              {t("Last {n} days up to the end of this period · {s} session days, {o} off days.", { n: report.response.comparison.windowDays, s: report.response.comparison.sessionDays, o: report.response.comparison.offDays })}
             </p>
             <table className="w-full text-sm tabular-nums">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-[#E3E9DE]">
-                  <th className="py-2 font-medium">Measure</th><th className="py-2 font-medium">Session days</th><th className="py-2 font-medium">Off days</th><th className="py-2 font-medium">Difference</th><th className="py-2 font-medium">Confidence</th>
+                  <th className="py-2 font-medium">{t("Measure")}</th><th className="py-2 font-medium">{t("Session days")}</th><th className="py-2 font-medium">{t("Off days")}</th><th className="py-2 font-medium">{t("Difference")}</th><th className="py-2 font-medium">{t("Confidence")}</th>
                 </tr>
               </thead>
               <tbody>
                 {report.response.comparison.metrics.map((m) => (
                   <tr key={m.key} className="border-b last:border-0 border-[#EEF2EA]">
-                    <td className="py-2">{m.label}</td>
+                    <td className="py-2">{t(METRIC_TITLES[m.key] || m.label)}</td>
                     <td className="py-2">{num(m.sessionValue, m.unit)}</td>
                     <td className="py-2">{num(m.offValue, m.unit)}</td>
                     <td className={cn("py-2", m.direction === "better" ? "text-[#5F7D48] font-medium" : m.direction === "worse" ? "text-amber-700" : "text-gray-500")}>
-                      {m.diff === null ? "—" : `${signed(m.diff, m.unit)}${m.direction === "same" ? " (within normal)" : ""}`}
+                      {m.diff === null ? "—" : `${signed(m.diff, m.unit)}${m.direction === "same" ? ` (${t("within normal")})` : ""}`}
                     </td>
-                    <td className="py-2 text-xs text-gray-500">{({ building: "Building", early: "Early pattern", consistent: "Consistent" } as Record<string, string>)[m.confidence]}</td>
+                    <td className="py-2 text-xs text-gray-500">{t(({ building: "Building", early: "Early pattern", consistent: "Consistent pattern" } as Record<string, string>)[m.confidence] || m.confidence)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -176,8 +180,8 @@ function ReportView({ userId }: { userId: string }) {
         )}
 
         <footer className="text-[11px] text-gray-400 border-t border-[#E3E9DE] pt-4">
-          Data from the patient&apos;s Charisma Ring, shared with their consent. Times use the patient&apos;s time zone.
-          Wellness trends only: not a diagnosis. Session comparisons show associations, not proof of cause.
+          {t("Data from the patient's Charisma Ring, shared with their consent. Times use the patient's time zone.")}{" "}
+          {t("Wellness trends only: not a diagnosis. Session comparisons show associations, not proof of cause.")}
         </footer>
       </article>
     </div>
@@ -185,15 +189,17 @@ function ReportView({ userId }: { userId: string }) {
 }
 
 function Chart({ title, children }: { title: string; children: React.ReactNode }) {
+  const { t } = useI18n()
   return (
     <section className="break-inside-avoid">
-      <h3 className="text-sm font-medium mb-2">{title}</h3>
+      <h3 className="text-sm font-medium mb-2">{t(title)}</h3>
       {children}
     </section>
   )
 }
 
 function SummaryTable({ summary: s, isMonth }: { summary: Summary; isMonth: boolean }) {
+  const { t } = useI18n()
   type Row = { label: string; m?: { value: number | null; previous: number | null; change: number | null }; fmt: (v: number | null) => string; unit: string; lower?: boolean }
   const all: Row[] = [
     { label: "Sleep per night", m: s.sleepMinutes, fmt: (v) => minutesText(v), unit: "min" },
@@ -209,10 +215,10 @@ function SummaryTable({ summary: s, isMonth }: { summary: Summary; isMonth: bool
     <table className="w-full text-sm tabular-nums">
       <thead>
         <tr className="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-[#E3E9DE]">
-          <th className="py-2 font-medium">Measure</th>
-          <th className="py-2 font-medium">This {isMonth ? "month" : "week"}</th>
-          <th className="py-2 font-medium">Previous {isMonth ? "month" : "week"}</th>
-          <th className="py-2 font-medium">Change</th>
+          <th className="py-2 font-medium">{t("Measure")}</th>
+          <th className="py-2 font-medium">{t(isMonth ? "This month" : "This week")}</th>
+          <th className="py-2 font-medium">{t(isMonth ? "Previous month" : "Previous week")}</th>
+          <th className="py-2 font-medium">{t("Change")}</th>
         </tr>
       </thead>
       <tbody>
@@ -221,7 +227,7 @@ function SummaryTable({ summary: s, isMonth }: { summary: Summary; isMonth: bool
           const good = ch !== null && Math.round(ch) !== 0 && (r.lower ? ch < 0 : ch > 0)
           return (
             <tr key={r.label} className="border-b last:border-0 border-[#EEF2EA]">
-              <td className="py-2">{r.label}</td>
+              <td className="py-2">{t(r.label)}</td>
               <td className="py-2 font-medium">{r.fmt(r.m!.value)}</td>
               <td className="py-2 text-gray-500">{r.fmt(r.m!.previous)}</td>
               <td className={cn("py-2", ch === null || Math.round(ch) === 0 ? "text-gray-400" : good ? "text-[#5F7D48]" : "text-amber-700")}>
@@ -232,7 +238,7 @@ function SummaryTable({ summary: s, isMonth }: { summary: Summary; isMonth: bool
         })}
         {s.sessions && (
           <tr>
-            <td className="py-2">Sessions completed</td>
+            <td className="py-2">{t("Sessions completed")}</td>
             <td className="py-2 font-medium">{s.sessions.value}</td>
             <td className="py-2 text-gray-500">{s.sessions.previous}</td>
             <td className="py-2 text-gray-400">{signed(s.sessions.value - s.sessions.previous)}</td>

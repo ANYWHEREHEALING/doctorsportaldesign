@@ -287,3 +287,25 @@ export const api = {
   withdrawRecommendation: (userId: string | number, recId: number) =>
     request<object>("DELETE", `/patients/${userId}/recommendations/${recId}`),
 }
+
+export interface ChatMessage {
+  id: number; linkId: number; senderRole: "doctor" | "user";
+  clientMessageId: string; text: string; createdAt: string
+}
+export interface ChatAvailability { away: boolean; awayUntil: string | null; note: string }
+export interface ChatConversation {
+  linkId: number; userId: number; doctorId: number; name: string; unread: number;
+  lastMessage: ChatMessage | null; availability: ChatAvailability
+}
+export interface ChatHistory {
+  messages: ChatMessage[]; hasMore: boolean; doctorReadId: number; userReadId: number;
+  availability: ChatAvailability
+}
+export const chatApi = {
+  list: () => request<{ conversations: ChatConversation[] }>("GET", "/chat"),
+  history: (id: number, cursor = "") => request<ChatHistory>("GET", `/chat/${id}/messages${cursor}`),
+  send: (id: number, text: string, clientMessageId: string) => request<{ message: ChatMessage }>("POST", `/chat/${id}/messages`, { text, clientMessageId }),
+  read: (id: number, messageId: number) => request("POST", `/chat/${id}/read`, { messageId }),
+  availability: () => request<{ availability: ChatAvailability }>("GET", "/chat/availability"),
+  setAvailability: (value: ChatAvailability) => request<{ availability: ChatAvailability }>("PUT", "/chat/availability", value),
+}

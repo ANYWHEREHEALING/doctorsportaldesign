@@ -7,8 +7,8 @@ import { createContext, useContext, useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LogOut, Moon, Sun, Users } from "lucide-react"
-import { api, Doctor } from "@/app/libs/api"
+import { LogOut, Moon, Sun, Users, MessageCircle } from "lucide-react"
+import { api, Doctor, chatApi } from "@/app/libs/api"
 import { cn } from "@/app/libs/utils"
 import { LanguageSwitch, storedLanguage, useI18n } from "@/app/libs/i18n"
 
@@ -33,6 +33,7 @@ export function useDarkMode(): [boolean, (v: boolean) => void] {
 export function Shell({ children }: { children: React.ReactNode }) {
   const [doctor, setDoctor] = useState<Doctor | null>(null)
   const [dark, setDark] = useDarkMode()
+  const [unread, setUnread] = useState(0)
   const [signingOut, setSigningOut] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -57,6 +58,19 @@ export function Shell({ children }: { children: React.ReactNode }) {
     router.replace("/")
   }
 
+  useEffect(() => {
+    if (!doctor) return
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout>
+    const poll = async () => {
+      try { const r = await chatApi.list(); if (!cancelled) setUnread(r.conversations.reduce((n, c) => n + c.unread, 0)) } catch { /* inbox handles errors */ }
+      if (!cancelled) timer = setTimeout(poll, 15000)
+    }
+    void poll()
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [doctor])
+
+
   if (!doctor) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F7F1] dark:bg-gray-900">
@@ -65,7 +79,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
     )
   }
 
-  const nav = [{ href: "/patients", label: t("Patients"), icon: Users }]
+
+  const nav = [{ href: "/patients", label: t("Patients"), icon: Users },
+    { href: "/messages", label: `${t("Messages")}${unread ? ` (${unread})` : ""}`, icon: MessageCircle }]
 
   return (
     <DoctorContext.Provider value={doctor}>
@@ -125,6 +141,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Image src="/Group.png" alt="" width={24} height={24} /> {t("Patients")}
           </Link>
           <div className="flex items-center gap-3">
+            <Link href="/messages" className="text-sm">{t("Messages")}{unread > 0 ? ` (${unread})` : ""}</Link>
             <LanguageSwitch onChange={saveLanguage} />
             <button onClick={signOut} className="text-sm text-gray-600 dark:text-gray-300">{t("Sign out")}</button>
           </div>

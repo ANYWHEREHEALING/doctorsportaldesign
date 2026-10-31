@@ -70,6 +70,7 @@ export default function PatientPage({ params }: { params: { id: string } }) {
   return (
     <div className="space-y-6">
       <BackLink />
+      <Link href={`/messages?patient=${p.id}`} className="inline-block rounded-lg bg-[#4F6B3A] text-white px-4 py-2 text-sm">{t("Messages")}</Link>
 
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>

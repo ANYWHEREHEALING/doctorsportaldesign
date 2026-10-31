@@ -315,3 +315,5 @@ export const ES: Record<string, string> = {
   "The portal isn't configured yet (PORTAL_JWT_SECRET).": "El portal todavía no está configurado (PORTAL_JWT_SECRET).",
   "Can't reach the server. Check your connection and try again.": "No se puede conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
 }
+
+Object.assign(ES, { "Messages": "Mensajes" })

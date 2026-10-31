@@ -32,6 +32,8 @@ export interface PlanProgress {
   totalTarget: number
   endDate: string
   ended: boolean
+  /** Daily plans only: sessions done today. */
+  today: { done: number; target: number } | null
 }
 
 export interface Recommendation {
@@ -41,6 +43,8 @@ export interface Recommendation {
   kind: string | null
   kindTitle: string | null
   sessionsPerWeek: number | null
+  /** Set for daily plans (1–3); sessionsPerWeek is then this × 7. */
+  sessionsPerDay: number | null
   weeks: number | null
   startDate: string | null
   status: "active" | "ended" | "cancelled"
@@ -69,7 +73,14 @@ export interface PatientRow {
   stress7d?: number | null
   stressChange?: number | null
   flags: Flag[]
-  plan?: { kindTitle: string; thisWeek: PlanWeek; currentWeek: number; weeks: number } | null
+  plan?: {
+    kindTitle: string
+    thisWeek: PlanWeek
+    currentWeek: number
+    weeks: number
+    sessionsPerDay?: number | null
+    today?: { done: number; target: number } | null
+  } | null
 }
 
 export interface DayRow {
@@ -265,8 +276,12 @@ export const api = {
   deleteNote: (userId: string | number, noteId: number) => request<object>("DELETE", `/patients/${userId}/notes/${noteId}`),
   recommendations: (userId: string | number) =>
     request<{ recommendations: Recommendation[]; canSeeProgress: boolean }>("GET", `/patients/${userId}/recommendations`),
-  recommendPlan: (userId: string | number, kind: string, sessionsPerWeek: number, weeks: number, message: string) =>
-    request<{ recommendation: Recommendation }>("POST", `/patients/${userId}/recommendations`, { type: "plan", kind, sessionsPerWeek, weeks, message }),
+  /** `per` is how often: { week: 1–7 } or { day: 1–3 }. */
+  recommendPlan: (userId: string | number, kind: string, per: { week: number } | { day: number }, weeks: number, message: string) =>
+    request<{ recommendation: Recommendation }>("POST", `/patients/${userId}/recommendations`, {
+      type: "plan", kind, weeks, message,
+      ...("day" in per ? { sessionsPerDay: per.day } : { sessionsPerWeek: per.week }),
+    }),
   recommendNote: (userId: string | number, message: string) =>
     request<{ recommendation: Recommendation }>("POST", `/patients/${userId}/recommendations`, { type: "note", message }),
   withdrawRecommendation: (userId: string | number, recId: number) =>

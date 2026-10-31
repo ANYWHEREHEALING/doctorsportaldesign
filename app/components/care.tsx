@@ -61,7 +61,8 @@ function Recommendations({ userId, canSeeSessions }: { userId: number; canSeeSes
   const [items, setItems] = useState<Recommendation[] | null>(null)
   const [mode, setMode] = useState<"plan" | "note">("plan")
   const [kind, setKind] = useState("deepSleep")
-  const [perWeek, setPerWeek] = useState(3)
+  // How often: "w3" = 3× a week, "d2" = 2× a day (a day is at most 3).
+  const [often, setOften] = useState("w3")
   const [weeks, setWeeks] = useState(4)
   const [message, setMessage] = useState("")
   const [busy, setBusy] = useState(false)
@@ -82,9 +83,14 @@ function Recommendations({ userId, canSeeSessions }: { userId: number; canSeeSes
     try {
       if (mode === "plan") {
         // Written in the portal language, so the patient reads it the same way.
-        const fallback = t(weeks === 1 ? "{kind}, {n}× a week for {w} week." : "{kind}, {n}× a week for {w} weeks.",
-          { kind: t(KIND_TITLES[kind]), n: perWeek, w: weeks })
-        await api.recommendPlan(userId, kind, perWeek, weeks, message.trim() || fallback)
+        const daily = often.startsWith("d")
+        const n = Number(often.slice(1))
+        const fallback = t(
+          daily
+            ? (weeks === 1 ? "{kind}, {n}× a day for {w} week." : "{kind}, {n}× a day for {w} weeks.")
+            : (weeks === 1 ? "{kind}, {n}× a week for {w} week." : "{kind}, {n}× a week for {w} weeks."),
+          { kind: t(KIND_TITLES[kind]), n, w: weeks })
+        await api.recommendPlan(userId, kind, daily ? { day: n } : { week: n }, weeks, message.trim() || fallback)
       } else {
         await api.recommendNote(userId, message.trim())
       }
@@ -133,9 +139,14 @@ function Recommendations({ userId, canSeeSessions }: { userId: number; canSeeSes
               </select>
             </label>
             <label>
-              <span className="block text-xs text-gray-500 mb-1">{t("Per week")}</span>
-              <select value={perWeek} onChange={(e) => setPerWeek(Number(e.target.value))} className="w-full h-10 px-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                {[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{n}×</option>)}
+              <span className="block text-xs text-gray-500 mb-1">{t("How often")}</span>
+              <select value={often} onChange={(e) => setOften(e.target.value)} className="w-full h-10 px-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                <optgroup label={t("Per week")}>
+                  {[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={"w" + n} value={"w" + n}>{t("{n}× a week", { n })}</option>)}
+                </optgroup>
+                <optgroup label={t("Per day")}>
+                  {[1, 2, 3].map((n) => <option key={"d" + n} value={"d" + n}>{t("{n}× a day", { n })}</option>)}
+                </optgroup>
               </select>
             </label>
             <label>
@@ -157,7 +168,7 @@ function Recommendations({ userId, canSeeSessions }: { userId: number; canSeeSes
           className="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm outline-none focus:ring-2 focus:ring-[#8BA872]"
         />
         {mode === "plan" && activePlan && (
-          <p className="text-xs text-amber-700 dark:text-amber-300">{t("This replaces the current plan ({kind}, {n}× a week).", { kind: t(KIND_TITLES[activePlan.kind || ""] || activePlan.kindTitle || ""), n: activePlan.sessionsPerWeek ?? 0 })}</p>
+          <p className="text-xs text-amber-700 dark:text-amber-300">{t("This replaces the current plan ({kind}, {often}).", { kind: t(KIND_TITLES[activePlan.kind || ""] || activePlan.kindTitle || ""), often: oftenText(activePlan, t) })}</p>
         )}
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
         {sent && <p role="status" className="text-sm text-[#4F6B3A] dark:text-[#B9D3A2]">{sent}</p>}
@@ -178,7 +189,7 @@ function Recommendations({ userId, canSeeSessions }: { userId: number; canSeeSes
                 <div className="text-sm font-medium flex items-center gap-2">
                   {r.type === "plan" ? <CalendarCheck className="h-4 w-4 text-[#5F7D48]" /> : <MessageSquare className="h-4 w-4 text-[#5F7D48]" />}
                   {r.type === "plan"
-                    ? `${t(KIND_TITLES[r.kind || ""] || r.kindTitle || "")} · ${t("{n}× a week", { n: r.sessionsPerWeek ?? 0 })} · ${t((r.weeks ?? 0) === 1 ? "{n} week" : "{n} weeks", { n: r.weeks ?? 0 })}`
+                    ? `${t(KIND_TITLES[r.kind || ""] || r.kindTitle || "")} · ${oftenText(r, t)} · ${t((r.weeks ?? 0) === 1 ? "{n} week" : "{n} weeks", { n: r.weeks ?? 0 })}`
                     : t("Advice")}
                   {r.status === "ended" && <span className="text-[11px] px-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500">{t("Finished")}</span>}
                 </div>
@@ -202,6 +213,13 @@ function Recommendations({ userId, canSeeSessions }: { userId: number; canSeeSes
   )
 }
 
+/** "3× a week" or "2× a day". */
+function oftenText(r: Recommendation, t: (key: string, vars?: Record<string, string | number>) => string) {
+  return r.sessionsPerDay
+    ? t("{n}× a day", { n: r.sessionsPerDay })
+    : t("{n}× a week", { n: r.sessionsPerWeek ?? 0 })
+}
+
 function PlanBars({ progress }: { progress: NonNullable<Recommendation["progress"]> }) {
   const { t } = useI18n()
   return (
@@ -220,6 +238,7 @@ function PlanBars({ progress }: { progress: NonNullable<Recommendation["progress
         ))}
       </div>
       <p className="text-xs text-gray-500 mt-1">
+        {progress.today && !progress.ended && `${t("Today: {done} of {target}", { done: progress.today.done, target: progress.today.target })} · `}
         {t("{done} of {target} sessions done", { done: progress.totalDone, target: progress.totalTarget })}
         {progress.ended ? "" : ` · ${t("ends {date}", { date: shortDay(progress.endDate) })}`}
       </p>

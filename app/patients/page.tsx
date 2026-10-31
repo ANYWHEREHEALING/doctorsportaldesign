@@ -146,7 +146,9 @@ export default function PatientsPage() {
                     <td className="px-3 py-3 tabular-nums">
                       {p.plan ? (
                         <span className={cn(p.plan.thisWeek.met ? "text-[#5F7D48]" : "")}>
-                          {p.plan.thisWeek.done}/{p.plan.thisWeek.target}
+                          {p.plan.today
+                            ? t("{done}/{target} today", { done: p.plan.today.done, target: p.plan.today.target })
+                            : `${p.plan.thisWeek.done}/${p.plan.thisWeek.target}`}
                           <span className="block text-xs text-gray-500">{t(planKindTitle(p.plan.kindTitle))} · {t("wk {n}/{total}", { n: p.plan.currentWeek, total: p.plan.weeks })}</span>
                         </span>
                       ) : <Muted />}

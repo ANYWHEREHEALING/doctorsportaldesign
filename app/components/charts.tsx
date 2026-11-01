@@ -145,22 +145,42 @@ export function LineChart({
 }
 
 /** Stacked bars per day (sleep stages). */
+/** Whole-number gridlines: 0, step, 2 × step…, at most 5 above zero (the step doubles if needed). */
+function stepTicks(max: number, step: number): number[] {
+  let s = step
+  while (Math.ceil(max / s) > 5) s *= 2
+  const n = Math.max(1, Math.ceil(max / s))
+  return Array.from({ length: n + 1 }, (_, k) => k * s)
+}
+
+/**
+ * Stacked bars, one per label.
+ *   format      value text on hover (e.g. "6h 07m")
+ *   tickStep    gridlines at whole multiples of this (e.g. 120 = every 2 h);
+ *               without it: 0, half and the top
+ *   axisFormat  gridline label text (defaults to format)
+ */
 export function StackedBars({
-  labels, stacks, height = 220, format = (v: number) => `${Math.round(v)}`, markers,
+  labels, stacks, height = 220, format = (v: number) => `${Math.round(v)}`, markers, tickStep, axisFormat,
 }: {
   labels: string[]; stacks: Series[]; height?: number; format?: (v: number) => string; markers?: Marker[]
+  tickStep?: number; axisFormat?: (v: number) => string
 }) {
   const { t } = useI18n()
   const totals = labels.map((_, i) => stacks.reduce((a, s) => a + (Number(s.values[i]) || 0), 0))
   if (!totals.some((v) => v > 0)) return <Empty height={height} />
-  const hi = Math.max(...totals) * 1.1
+  const max = Math.max(...totals)
+  const ticks = tickStep ? stepTicks(max * 1.05, tickStep) : [0, (max * 1.1) / 2, max * 1.1]
+  const hi = ticks[ticks.length - 1]
+  const tickText = axisFormat || format
+  // Room for the widest gridline label (about 6.5 px a character at 11 px) + the gap.
+  const left = Math.max(PAD.left, Math.max(...ticks.map((tk) => tickText(tk).length)) * 6.5 + 12)
   const H = height
-  const iw = W - PAD.left - PAD.right
+  const iw = W - left - PAD.right
   const ih = H - PAD.top - PAD.bottom
   const slot = iw / labels.length
   const bw = Math.max(3, Math.min(28, slot * 0.62))
   const y = (v: number) => PAD.top + ih - (v / hi) * ih
-  const ticks = [0, hi / 2, hi]
   const xl = xLabels(labels)
 
   return (
@@ -168,14 +188,14 @@ export function StackedBars({
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img">
         {ticks.map((tk, i) => (
           <g key={i}>
-            <line x1={PAD.left} x2={W - PAD.right} y1={y(tk)} y2={y(tk)} className="stroke-gray-200 dark:stroke-gray-700" strokeDasharray="3 4" />
-            <text x={PAD.left - 6} y={y(tk) + 4} textAnchor="end" className="fill-gray-400 text-[11px]">{format(tk)}</text>
+            <line x1={left} x2={W - PAD.right} y1={y(tk)} y2={y(tk)} className="stroke-gray-200 dark:stroke-gray-700" strokeDasharray="3 4" />
+            <text x={left - 6} y={y(tk) + 4} textAnchor="end" className="fill-gray-400 text-[11px]">{tickText(tk)}</text>
           </g>
         ))}
-        <Markers markers={markers} labels={labels} x={(i) => PAD.left + slot * i + slot / 2} top={PAD.top} bottom={H - PAD.bottom} />
+        <Markers markers={markers} labels={labels} x={(i) => left + slot * i + slot / 2} top={PAD.top} bottom={H - PAD.bottom} />
         {labels.map((l, i) => {
           let acc = 0
-          const cx = PAD.left + slot * i + slot / 2
+          const cx = left + slot * i + slot / 2
           return (
             <g key={l}>
               {stacks.map((s) => {

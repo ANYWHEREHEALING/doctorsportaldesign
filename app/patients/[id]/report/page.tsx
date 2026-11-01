@@ -95,7 +95,7 @@ function ReportView({ userId }: { userId: string }) {
         <div className="grid md:grid-cols-2 print:grid-cols-2 gap-6">
           {s.sleepMinutes && (
             <Chart title="Sleep stages">
-              <StackedBars labels={labels} height={190} format={(v) => minutesText(v)} stacks={[
+              <StackedBars labels={labels} height={190} format={(v) => minutesText(v)} tickStep={120} axisFormat={(v) => `${v / 60}h`} stacks={[
                 { name: "Deep", color: "#35597A", values: report.days.map((d) => d.sleep?.deepMinutes) },
                 { name: "Light", color: "#86ABCB", values: report.days.map((d) => d.sleep?.lightMinutes) },
                 { name: "REM", color: "#9A86CF", values: report.days.map((d) => d.sleep?.remMinutes) },
